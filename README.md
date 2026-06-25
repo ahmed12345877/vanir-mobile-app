@@ -34,6 +34,68 @@ cd mobile
 npm install
 ```
 
+## Android Build Setup (macOS)
+
+If Android Studio or Gradle cannot find Android SDK, complete this setup first.
+
+### 1) Required versions
+
+- Node.js: 22.11.0 or newer (project uses `.nvmrc` and `engines.node >= 22.11.0`)
+- JDK: 17
+- Android Studio with Android SDK installed
+
+### 2) Use Node 22
+
+```bash
+nvm install 22.11.0
+nvm use 22.11.0
+node -v
+```
+
+### 3) Install and select JDK 17
+
+```bash
+brew install --cask temurin@17
+export JAVA_HOME=$(/usr/libexec/java_home -v 17)
+java -version
+```
+
+### 4) Android SDK path
+
+Default macOS SDK path is:
+
+```text
+/Users/zaad_1/Library/Android/sdk
+```
+
+Project local SDK config is set in `android/local.properties`:
+
+```properties
+sdk.dir=/Users/zaad_1/Library/Android/sdk
+```
+
+If your SDK is installed elsewhere, update the path in `android/local.properties`.
+
+### 5) Install required Android SDK packages
+
+From Android Studio SDK Manager, make sure these are installed:
+
+- Android SDK Platform 36
+- Android SDK Build-Tools 36.0.0
+- Android SDK Command-line Tools (latest)
+- Android Emulator
+- Android SDK Platform-Tools
+
+### 6) Build clean + run
+
+```bash
+cd android
+./gradlew clean
+cd ..
+npm install
+npm run android
+```
+
 ## Run
 
 ```bash

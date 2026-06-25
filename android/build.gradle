@@ -20,3 +20,12 @@ buildscript {
 }
 
 apply plugin: "com.facebook.react.rootproject"
+
+allprojects {
+    configurations.all {
+        resolutionStrategy {
+            // Avoid D8 stack-map issues seen with newer play-services-auth during debug dex merge.
+            force "com.google.android.gms:play-services-auth:21.4.0"
+        }
+    }
+}
