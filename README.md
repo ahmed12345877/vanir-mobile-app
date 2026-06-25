@@ -11,6 +11,27 @@ React Native mobile shell for the existing VANIR web platform.
 - Core mobile screens for home, gallery, offers, blog, booking, reviews, and profile
 - Shared tRPC + React Query client for the current backend
 
+## Prerequisites
+
+- Node.js `22.11.0` (see `.nvmrc`)
+- npm `10+`
+- JDK `17`
+- Android SDK / Android Studio
+
+### Use the project Node version
+
+```bash
+nvm use
+node -v
+```
+
+If `nvm use` fails, install the version first:
+
+```bash
+nvm install 22.11.0
+nvm use 22.11.0
+```
+
 ## Firebase setup
 
 This mobile app targets the same Firebase project already used by the web app:
@@ -23,14 +44,15 @@ This mobile app targets the same Firebase project already used by the web app:
 
 Before running the app:
 
-1. Download `google-services.json` for Android from the same Firebase project and place it at `mobile/android/app/google-services.json`.
-2. Download `GoogleService-Info.plist` for iOS from the same Firebase project and place it in `mobile/ios/VanirMobile/GoogleService-Info.plist`.
+1. Download `google-services.json` for Android from the same Firebase project and place it at `android/app/google-services.json`.
+2. Download `GoogleService-Info.plist` for iOS from the same Firebase project and place it in `ios/VanirMobile/GoogleService-Info.plist`.
 3. Set the Google web client ID in `src/config/appConfig.ts` if you want mobile Google sign-in enabled.
 
 ## Install
 
+Run from the repository root:
+
 ```bash
-cd mobile
 npm install
 ```
 
@@ -39,6 +61,19 @@ npm install
 ```bash
 npm run android
 npm run ios
+```
+
+## Android clean build checklist
+
+If Android build fails, run this sequence from the repository root:
+
+```bash
+nvm use
+node -v
+npm install
+cd android
+./gradlew clean
+./gradlew assembleDebug --stacktrace
 ```
 
 ## API base URL
