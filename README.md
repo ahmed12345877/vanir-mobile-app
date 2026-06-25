@@ -2,14 +2,49 @@
 
 React Native mobile shell for the existing VANIR web platform.
 
-## What is included
+## CI/CD (GitHub Actions)
 
-- React Native app scaffold for Android and iOS
-- React Navigation tab + stack setup
-- Firebase Auth wiring with React Native Firebase
-- Session sync against the existing Node/Firebase backend
-- Core mobile screens for home, gallery, offers, blog, booking, reviews, and profile
-- Shared tRPC + React Query client for the current backend
+This repository includes:
+
+- `android-ci.yml`: Builds Android debug APK on push/PR.
+- `firebase-distribution.yml`: Manual workflow to build Android release APK and upload it to Firebase App Distribution.
+
+### Required GitHub Secrets
+
+Add the following repository secrets in:
+`Settings > Secrets and variables > Actions`
+
+1. `FIREBASE_SERVICE_ACCOUNT_JSON`
+   - Full JSON content of Firebase service account key.
+2. `FIREBASE_APP_ID_ANDROID`
+   - Firebase Android App ID (example: `1:1234567890:android:abcdef...`).
+
+### Trigger Firebase distribution
+
+Go to:
+`Actions > Firebase App Distribution (Android) > Run workflow`
+and optionally add release notes.
+
+## Prerequisites
+
+- Node.js `22.11.0` (see `.nvmrc`)
+- npm `10+`
+- JDK `17`
+- Android SDK / Android Studio
+
+### Use the project Node version
+
+```bash
+nvm use
+node -v
+```
+
+If `nvm use` fails, install the version first:
+
+```bash
+nvm install 22.11.0
+nvm use 22.11.0
+```
 
 ## Firebase setup
 
@@ -23,14 +58,15 @@ This mobile app targets the same Firebase project already used by the web app:
 
 Before running the app:
 
-1. Download `google-services.json` for Android from the same Firebase project and place it at `mobile/android/app/google-services.json`.
-2. Download `GoogleService-Info.plist` for iOS from the same Firebase project and place it in `mobile/ios/VanirMobile/GoogleService-Info.plist`.
+1. Download `google-services.json` for Android from the same Firebase project and place it at `android/app/google-services.json`.
+2. Download `GoogleService-Info.plist` for iOS from the same Firebase project and place it in `ios/VanirMobile/GoogleService-Info.plist`.
 3. Set the Google web client ID in `src/config/appConfig.ts` if you want mobile Google sign-in enabled.
 
 ## Install
 
+Run from the repository root:
+
 ```bash
-cd mobile
 npm install
 ```
 
@@ -101,6 +137,19 @@ npm run android
 ```bash
 npm run android
 npm run ios
+```
+
+## Android clean build checklist
+
+If Android build fails, run this sequence from the repository root:
+
+```bash
+nvm use
+node -v
+npm install
+cd android
+./gradlew clean
+./gradlew assembleDebug --stacktrace
 ```
 
 ## API base URL
