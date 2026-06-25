@@ -2,14 +2,28 @@
 
 React Native mobile shell for the existing VANIR web platform.
 
-## What is included
+## CI/CD (GitHub Actions)
 
-- React Native app scaffold for Android and iOS
-- React Navigation tab + stack setup
-- Firebase Auth wiring with React Native Firebase
-- Session sync against the existing Node/Firebase backend
-- Core mobile screens for home, gallery, offers, blog, booking, reviews, and profile
-- Shared tRPC + React Query client for the current backend
+This repository includes:
+
+- `android-ci.yml`: Builds Android debug APK on push/PR.
+- `firebase-distribution.yml`: Manual workflow to build Android release APK and upload it to Firebase App Distribution.
+
+### Required GitHub Secrets
+
+Add the following repository secrets in:
+`Settings > Secrets and variables > Actions`
+
+1. `FIREBASE_SERVICE_ACCOUNT_JSON`
+   - Full JSON content of Firebase service account key.
+2. `FIREBASE_APP_ID_ANDROID`
+   - Firebase Android App ID (example: `1:1234567890:android:abcdef...`).
+
+### Trigger Firebase distribution
+
+Go to:
+`Actions > Firebase App Distribution (Android) > Run workflow`
+and optionally add release notes.
 
 ## Prerequisites
 
