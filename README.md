@@ -71,7 +71,7 @@ Default macOS SDK path is:
 Project local SDK config is set in `android/local.properties`:
 
 ```properties
-sdk.dir=/Users/zaad_1/Library/Android/sdk
+sdk.dir=/Users/<your-username>/Library/Android/sdk
 ```
 
 If your SDK is installed elsewhere, update the path in `android/local.properties`.
