@@ -73,6 +73,18 @@ def enableProguardInReleaseBuilds = false
  */
 def jscFlavor = 'io.github.react-native-community:jsc-android:2026004.+'
 
+def keystoreProperties = new Properties()
+def keystorePropertiesFile = rootProject.file('keystore.properties')
+if (keystorePropertiesFile.exists()) {
+    keystoreProperties.load(new FileInputStream(keystorePropertiesFile))
+}
+
+def releaseStoreFilePath = (String) (keystoreProperties['VANIR_UPLOAD_STORE_FILE'] ?: project.findProperty('VANIR_UPLOAD_STORE_FILE') ?: System.getenv('VANIR_UPLOAD_STORE_FILE'))
+def releaseStorePassword = (String) (keystoreProperties['VANIR_UPLOAD_STORE_PASSWORD'] ?: project.findProperty('VANIR_UPLOAD_STORE_PASSWORD') ?: System.getenv('VANIR_UPLOAD_STORE_PASSWORD'))
+def releaseKeyAlias = (String) (keystoreProperties['VANIR_UPLOAD_KEY_ALIAS'] ?: project.findProperty('VANIR_UPLOAD_KEY_ALIAS') ?: System.getenv('VANIR_UPLOAD_KEY_ALIAS'))
+def releaseKeyPassword = (String) (keystoreProperties['VANIR_UPLOAD_KEY_PASSWORD'] ?: project.findProperty('VANIR_UPLOAD_KEY_PASSWORD') ?: System.getenv('VANIR_UPLOAD_KEY_PASSWORD'))
+def hasReleaseSigning = releaseStoreFilePath && releaseStorePassword && releaseKeyAlias && releaseKeyPassword
+
 android {
     ndkVersion rootProject.ext.ndkVersion
     buildToolsVersion rootProject.ext.buildToolsVersion
@@ -94,6 +106,14 @@ android {
             keyAlias 'androiddebugkey'
             keyPassword 'android'
         }
+        if (hasReleaseSigning) {
+            release {
+                storeFile file(releaseStoreFilePath)
+                storePassword releaseStorePassword
+                keyAlias releaseKeyAlias
+                keyPassword releaseKeyPassword
+            }
+        }
     }
     buildTypes {
         debug {
@@ -103,12 +123,23 @@ android {
         release {
             // Caution! In production, you need to generate your own keystore file.
             // see https://reactnative.dev/docs/signed-apk-android.
-            signingConfig signingConfigs.debug
+            signingConfig hasReleaseSigning ? signingConfigs.release : signingConfigs.debug
             manifestPlaceholders = [usesCleartextTraffic: "false"]
             minifyEnabled enableProguardInReleaseBuilds
             proguardFiles getDefaultProguardFile("proguard-android.txt"), "proguard-rules.pro"
         }
     }
+}
+
+def isReleaseBuildRequested = gradle.startParameter.taskNames.any { taskName ->
+    taskName.toLowerCase().contains('release')
+}
+
+if (isReleaseBuildRequested && !hasReleaseSigning) {
+    throw new GradleException(
+            'Release signing is not configured. Create android/keystore.properties from android/keystore.properties.example ' +
+                    'or set VANIR_UPLOAD_STORE_FILE, VANIR_UPLOAD_STORE_PASSWORD, VANIR_UPLOAD_KEY_ALIAS, and VANIR_UPLOAD_KEY_PASSWORD.'
+    )
 }
 
 dependencies {

@@ -179,12 +179,57 @@ Available development endpoints:
 
 Development defaults are defined in `src/config/appConfig.ts`:
 
-- Android emulator: `http://10.0.2.2:3000`
-- iOS simulator: `http://localhost:3000`
-- Travel booking API: `http://localhost:3001`
+- Android/iOS development LAN API: `http://192.168.0.71:3000`
+- Android/iOS development LAN travel API: `http://192.168.0.71:3001`
 - Production: `https://vanirgroup.com`
 
 Update these values if your backend is hosted elsewhere.
+
+## Android release signing and AAB output
+
+Release signing is configured in `android/app/build.gradle` and expects your private values from one of these sources:
+
+- `android/keystore.properties` (recommended for local builds)
+- Gradle properties
+- Environment variables
+
+Required keys:
+
+- `VANIR_UPLOAD_STORE_FILE`
+- `VANIR_UPLOAD_STORE_PASSWORD`
+- `VANIR_UPLOAD_KEY_ALIAS`
+- `VANIR_UPLOAD_KEY_PASSWORD`
+
+### 1) Create local signing config
+
+```bash
+cp android/keystore.properties.example android/keystore.properties
+```
+
+Then edit `android/keystore.properties` with your real keystore path and passwords.
+
+### 2) Generate a release keystore (once)
+
+```bash
+keytool -genkeypair -v \
+   -storetype PKCS12 \
+   -keystore android/app/vanir-release-key.keystore \
+   -alias vanir-key \
+   -keyalg RSA -keysize 2048 -validity 10000
+```
+
+### 3) Build Google Play bundle (AAB)
+
+```bash
+cd android
+./gradlew :app:bundleRelease --console=plain
+```
+
+Output path:
+
+- `android/app/build/outputs/bundle/release/app-release.aab`
+
+If signing values are missing, Gradle intentionally fails fast with a clear error message.
 
 ## Legal and Google Play readiness
 
