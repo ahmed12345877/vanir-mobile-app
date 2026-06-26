@@ -79,6 +79,9 @@ export function ProfileScreen() {
         <Text style={screenStyles.sectionTitle}>Legal & Play Store compliance</Text>
         <Text style={screenStyles.body}>Review Terms of Service and Privacy Policy directly from the app. This section also provides a delete-account request path for compliance workflows.</Text>
         <View style={styles.legalActions}>
+          <Pressable style={styles.secondaryButton} onPress={() => navigation.navigate('LegalCenter')}>
+            <Text style={styles.secondaryButtonText}>Open Legal Center</Text>
+          </Pressable>
           <Pressable style={styles.secondaryButton} onPress={() => openLink(companyContent.contact.termsOfService)}>
             <Text style={styles.secondaryButtonText}>Terms of Service</Text>
           </Pressable>

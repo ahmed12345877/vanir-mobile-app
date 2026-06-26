@@ -17,6 +17,7 @@ import { HomeScreen } from '../screens/main/HomeScreen';
 import { LoginScreen } from '../screens/auth/LoginScreen';
 import { OffersScreen } from '../screens/main/OffersScreen';
 import { PackageBookingScreen } from '../screens/main/PackageBookingScreen';
+import { LegalCenterScreen } from '../screens/main/LegalCenterScreen';
 import { ProfileScreen } from '../screens/main/ProfileScreen';
 import { ReviewsScreen } from '../screens/main/ReviewsScreen';
 import { TravelEssentialsScreen } from '../screens/main/TravelEssentialsScreen';
@@ -80,6 +81,7 @@ export function RootNavigator() {
       <Stack.Screen name="FlightBooking" component={FlightBookingScreen} options={{ title: 'Flights' }} />
       <Stack.Screen name="HotelBooking" component={HotelBookingScreen} options={{ title: 'Hotels' }} />
       <Stack.Screen name="TravelEssentials" component={TravelEssentialsScreen} options={{ title: 'Travel essentials' }} />
+      <Stack.Screen name="LegalCenter" component={LegalCenterScreen} options={{ title: 'Legal center' }} />
       <Stack.Screen name="Contact" component={ContactScreen} options={{ title: 'Travel desk' }} />
       <Stack.Screen name="Reviews" component={ReviewsScreen} options={{ title: 'Traveler reviews' }} />
       <Stack.Screen

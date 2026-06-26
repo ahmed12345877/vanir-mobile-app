@@ -189,7 +189,10 @@ Update these values if your backend is hosted elsewhere.
 ## Legal and Google Play readiness
 
 - Privacy policy draft: `PRIVACY_POLICY.md`
+- Privacy policy (Arabic): `PRIVACY_POLICY.ar.md`
 - Terms of service draft: `TERMS_OF_SERVICE.md`
+- Terms of service (Arabic): `TERMS_OF_SERVICE.ar.md`
 - Play release checklist: `docs/GOOGLE_PLAY_RELEASE_CHECKLIST.md`
+- PR template draft: `docs/PR_DESCRIPTION.md`
 
 These files are included to speed up Play Console compliance reviews and keep legal/content declarations synchronized with app behavior.

@@ -6,6 +6,7 @@ export type RootStackParamList = {
   FlightBooking: undefined;
   HotelBooking: undefined;
   TravelEssentials: undefined;
+  LegalCenter: undefined;
   Reviews: undefined;
   Contact: { channel?: 'booking' | 'call' | 'whatsapp' | 'email' } | undefined;
   BlogPost: { slug: string; title: string };
