@@ -236,26 +236,26 @@ export function TravelEssentialsScreen() {
             }}>
             <View style={selectedItemId === item.id ? styles.selectedCard : undefined}>
               <SectionCard>
-              <Image source={{ uri: item.imageUrl }} style={styles.image} />
-              <View style={styles.cardHeaderRow}>
-                <Text style={screenStyles.label}>{item.category}</Text>
-                <Text style={styles.provider}>{item.provider}</Text>
-              </View>
-              <Text style={screenStyles.sectionTitle}>{item.title}</Text>
-              <Text style={screenStyles.body}>{item.summary}</Text>
-              <View style={styles.priceRow}>
-                <Text style={styles.price}>{item.price}</Text>
-                <Text style={styles.selectionState}>{selectedItemId === item.id ? 'Selected' : 'Tap to configure'}</Text>
-              </View>
-              <View style={styles.highlightsRow}>
-                {item.highlights.map(highlight => (
-                  <View key={highlight} style={styles.highlightChip}>
-                    <Text style={styles.highlightText}>{highlight}</Text>
-                  </View>
-                ))}
-              </View>
-                </SectionCard>
-              </View>
+                <Image source={{ uri: item.imageUrl }} style={styles.image} />
+                <View style={styles.cardHeaderRow}>
+                  <Text style={screenStyles.label}>{item.category}</Text>
+                  <Text style={styles.provider}>{item.provider}</Text>
+                </View>
+                <Text style={screenStyles.sectionTitle}>{item.title}</Text>
+                <Text style={screenStyles.body}>{item.summary}</Text>
+                <View style={styles.priceRow}>
+                  <Text style={styles.price}>{item.price}</Text>
+                  <Text style={styles.selectionState}>{selectedItemId === item.id ? 'Selected' : 'Tap to configure'}</Text>
+                </View>
+                <View style={styles.highlightsRow}>
+                  {item.highlights.map(highlight => (
+                    <View key={highlight} style={styles.highlightChip}>
+                      <Text style={styles.highlightText}>{highlight}</Text>
+                    </View>
+                  ))}
+                </View>
+              </SectionCard>
+            </View>
           </Pressable>
         ))}
       </View>

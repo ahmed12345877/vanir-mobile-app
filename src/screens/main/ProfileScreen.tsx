@@ -55,7 +55,7 @@ export function ProfileScreen() {
     <Screen
       title="Profile"
       subtitle="Your premium member dashboard for travel history, AI usage, support, and compliance actions."
-        actions={<SupportActionStrip focus="book" />}>
+      actions={<SupportActionStrip focus="book" />}>
       <SectionCard>
         <Text style={screenStyles.label}>Current member</Text>
         <Text style={screenStyles.sectionTitle}>{String((user as { name?: string })?.name ?? 'VANIR traveler')}</Text>

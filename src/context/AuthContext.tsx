@@ -97,10 +97,10 @@ export function AuthProvider({ children }: PropsWithChildren) {
 
   const value = useMemo<AuthContextValue>(
     () => ({
-        user: meQuery.data ?? firebaseUser ?? null,
+      user: meQuery.data ?? firebaseUser ?? null,
       firebaseUser,
-        isAuthenticated: Boolean(meQuery.data ?? firebaseUser),
-        isLoading: !bootstrapped || logoutMutation.isPending,
+      isAuthenticated: Boolean(meQuery.data ?? firebaseUser),
+      isLoading: !bootstrapped || logoutMutation.isPending,
       error,
       signIn,
       signUp,

@@ -1,6 +1,7 @@
 import http from 'node:http';
 
 const port = Number(process.env.PORT || 3001);
+const host = process.env.HOST || '0.0.0.0';
 
 const flightOffers = [
   {
@@ -410,6 +411,7 @@ const server = http.createServer(async (request, response) => {
   sendJson(response, 404, { error: 'Unknown route.' });
 });
 
-server.listen(port, () => {
-  console.log(`Travel booking server listening on http://localhost:${port}`);
+server.listen(port, host, () => {
+  console.log(`Travel booking server listening on http://${host}:${port}`);
+  console.log(`Health endpoint: http://localhost:${port}/health`);
 });

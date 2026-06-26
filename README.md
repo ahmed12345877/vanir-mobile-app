@@ -179,11 +179,28 @@ Available development endpoints:
 
 Development defaults are defined in `src/config/appConfig.ts`:
 
-- Android/iOS development LAN API: `http://192.168.0.71:3000`
-- Android/iOS development LAN travel API: `http://192.168.0.71:3001`
+- Android/iOS development LAN API: `http://10.118.239.83:3000`
+- Android/iOS development LAN travel API: `http://10.118.239.83:3001`
 - Production: `https://vanirgroup.com`
 
 Update these values if your backend is hosted elsewhere.
+
+If the IP does not open from your phone browser, verify all of the following:
+
+- Phone and laptop are on the same Wi-Fi network.
+- Local API process is running (`npm run travel-api` for `3001`).
+- The service binds to LAN, not only loopback.
+- macOS Firewall is not blocking incoming Node.js connections.
+
+### One-command LAN dev mode
+
+If you do not want to edit the IP manually, use:
+
+```bash
+npm run dev:lan
+```
+
+This starts Metro and the local travel API using the current Wi-Fi IP automatically.
 
 ## Android release signing and AAB output
 
