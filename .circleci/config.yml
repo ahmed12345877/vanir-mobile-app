@@ -1,0 +1,88 @@
+version: 2.1
+
+# Reusable executor — Node 22.11 matches .nvmrc and engines field in package.json.
+executors:
+  node:
+    docker:
+      - image: cimg/node:22.11
+    resource_class: medium
+
+jobs:
+  # ------------------------------------------------------------------
+  # install: single source of truth for dependency installation.
+  # Caches ~/.npm (the npm download cache) keyed on package-lock.json
+  # so network fetches are skipped on cache hits. Persists node_modules
+  # to the workspace so downstream jobs share the same install without
+  # re-running npm ci.
+  # ------------------------------------------------------------------
+  install:
+    executor: node
+    steps:
+      - checkout
+      - restore_cache:
+          keys:
+            - npm-v1-{{ .Branch }}-{{ checksum "package-lock.json" }}
+            - npm-v1-{{ .Branch }}-
+            - npm-v1-
+      - run:
+          name: Install dependencies
+          command: npm ci
+      - save_cache:
+          key: npm-v1-{{ .Branch }}-{{ checksum "package-lock.json" }}
+          paths:
+            - ~/.npm
+      - persist_to_workspace:
+          root: .
+          paths:
+            - node_modules
+
+  # ------------------------------------------------------------------
+  # lint, typecheck, test run in parallel after install completes.
+  # Attaching the workspace provides node_modules instantly (~2s)
+  # instead of running another npm ci (~30–60s).
+  # ------------------------------------------------------------------
+  lint:
+    executor: node
+    steps:
+      - checkout
+      - attach_workspace:
+          at: .
+      - run:
+          name: Lint
+          command: npm run lint
+
+  typecheck:
+    executor: node
+    steps:
+      - checkout
+      - attach_workspace:
+          at: .
+      - run:
+          name: Type check
+          command: npm run typecheck
+
+  test:
+    executor: node
+    steps:
+      - checkout
+      - attach_workspace:
+          at: .
+      - run:
+          name: Run tests
+          # --ci: disables watch mode, fails on new snapshots, deterministic output
+          # --forceExit: prevents Jest from hanging on open handles (Firebase, async)
+          command: npm test -- --ci --forceExit
+
+workflows:
+  build-and-test:
+    jobs:
+      - install
+      - lint:
+          requires:
+            - install
+      - typecheck:
+          requires:
+            - install
+      - test:
+          requires:
+            - install
