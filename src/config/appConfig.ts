@@ -1,16 +1,22 @@
 import { Platform } from 'react-native';
 
+const developmentLanHost = '192.168.0.71';
+
+function buildDevelopmentUrl(port: number) {
+  return `http://${developmentLanHost}:${port}`;
+}
+
 const developmentApiUrl = Platform.select({
-  android: 'http://localhost:3000',
-  ios: 'http://localhost:3000',
-  default: 'http://localhost:3000',
+  android: buildDevelopmentUrl(3000),
+  ios: buildDevelopmentUrl(3000),
+  default: buildDevelopmentUrl(3000),
 });
 const googleWebClientId: string =
   '1001729880037-9cuaiu287imvbp33jquv93dbv450nmud.apps.googleusercontent.com';
 
 export const appConfig = {
-  apiBaseUrl: __DEV__ ? developmentApiUrl ?? 'http://localhost:3000' : 'https://vanirgroup.com',
-  travelApiBaseUrl: __DEV__ ? 'http://localhost:3001' : 'https://vanirgroup.com',
+  apiBaseUrl: __DEV__ ? developmentApiUrl ?? buildDevelopmentUrl(3000) : 'https://vanirgroup.com',
+  travelApiBaseUrl: __DEV__ ? buildDevelopmentUrl(3001) : 'https://vanirgroup.com',
   companyWebsiteUrl: 'https://vanirgroup.com',
   firebase: {
     apiKey: 'AIzaSyAszyNw2a7_bv02cf0FBXiPXwt3E2-CXdY',
