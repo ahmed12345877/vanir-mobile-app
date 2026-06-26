@@ -1,0 +1,30 @@
+[debug] [2026-06-25T10:18:03.083Z] ----------------------------------------------------------------------
+[debug] [2026-06-25T10:18:03.085Z] Command:       /nix/store/ws50yvm6vzlzf7jzz6n7xh4szddrack1-nodejs-20.19.1/bin/node /nix/store/gm9mcvzb17vv8cla08khrg29vxn3sq4r-firebase-tools-15.1.0/lib/node_modules/firebase-tools/lib/bin/firebase.js init hosting
+[debug] [2026-06-25T10:18:03.085Z] CLI Version:   15.1.0
+[debug] [2026-06-25T10:18:03.085Z] Platform:      linux
+[debug] [2026-06-25T10:18:03.085Z] Node Version:  v20.19.1
+[debug] [2026-06-25T10:18:03.085Z] Time:          Thu Jun 25 2026 10:18:03 GMT+0000 (Coordinated Universal Time)
+[debug] [2026-06-25T10:18:03.086Z] ----------------------------------------------------------------------
+[debug] 
+[debug] [2026-06-25T10:18:03.659Z] Checked if tokens are valid: true, expires at: 1782386086315
+[debug] [2026-06-25T10:18:03.659Z] Checked if tokens are valid: true, expires at: 1782386086315
+[debug] [2026-06-25T10:18:03.662Z] >>> [apiv2][query] GET https://monospace-pa.googleapis.com/v1/workspaces/vanir-mobile-app-67444964 [none]
+[debug] [2026-06-25T10:18:04.335Z] <<< [apiv2][status] GET https://monospace-pa.googleapis.com/v1/workspaces/vanir-mobile-app-67444964 200
+[debug] [2026-06-25T10:18:04.335Z] <<< [apiv2][body] GET https://monospace-pa.googleapis.com/v1/workspaces/vanir-mobile-app-67444964 {"workspaceId":"vanir-mobile-app-67444964","name":"vanir-mobile-app","workspaceRedirectUrl":"firebase-vanir-mobile-app-1782180072898.cluster-cbeiita7rbe7iuwhvjs5zww2i4.cloudworkstations.dev","status":"WORKSPACE_STATUS_RUNNING","lastAccessDatetime":"2026-06-25T09:04:48.341149Z","workspaceTemplate":"WORKSPACE_TEMPLATE_FLUTTER","owner":"SELF","serviceAccountEmail":"msp-1982069792780999412@monospace-per-ws-sa-1.iam.gserviceaccount.com","gitRepoUrl":"https://github.com/ahmed12345877/vanir-mobile-app","enableNix":true,"ownerEmail":"q2w4115@gmail.com","workstationAccessToken":"eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJodHRwczovL2Nsb3VkLmdvb2dsZS5jb20vd29ya3N0YXRpb25zIiwiYXVkIjoiZmlyZWJhc2UtdmFuaXItbW9iaWxlLWFwcC0xNzgyMTgwMDcyODk4LmNsdXN0ZXItY2JlaWl0YTdyYmU3aXV3aHZqczV6d3cyaTQuY2xvdWR3b3Jrc3RhdGlvbnMuZGV2IiwiaWF0IjoxNzgyMzgyNjg0LCJleHAiOjE3ODI0NjkwODR9.eJuUlkedVH0S6ygyX7DmBqrMrGDPettlhoXcXfAj-FTXsejAZslCZIOtepdh7aaDjcAyaLZfOYSEAWrPsXZk84c37kbJukGCHQg_s5_9P8tLES2sPgB8tTLG2VRG6y9lRluf5HcE3Xlg4wlWX_gIXnpxTX1Km2kG8iEiWx1ZsOwLwjVYl8l8p1Rhva9smxNR0eIAHs969KHGYTenYWiqQHiT4aFKasM4tSPAigEM7IZCxVHVQm5TEdSmhfT1awrwEoRA-O5x6dMUREIt7IoYpcHFxOXYpSH6oYx8QWez4MMq-cvBKrH_2RwyjK5EnF4IBRgvTwQ4Q3m6KXwa3CKQtQ"}
+[info] 
+     ######## #### ########  ######## ########     ###     ######  ########
+     ##        ##  ##     ## ##       ##     ##  ##   ##  ##       ##
+     ######    ##  ########  ######   ########  #########  ######  ######
+     ##        ##  ##    ##  ##       ##     ## ##     ##       ## ##
+     ##       #### ##     ## ######## ########  ##     ##  ######  ########
+
+You're about to initialize a Firebase project in this directory:
+
+  /home/user/vanir-mobile-app
+
+[info] 
+=== Project Setup
+[info] 
+[info] First, let's associate this project directory with a Firebase project.
+[info] You can create multiple project aliases by running firebase use --add, 
+[info] 
