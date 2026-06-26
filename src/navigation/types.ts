@@ -6,6 +6,8 @@ export type RootStackParamList = {
   FlightBooking: undefined;
   HotelBooking: undefined;
   TravelEssentials: undefined;
+  UnifiedCheckout: undefined;
+  AIStudio: undefined;
   LegalCenter: undefined;
   Reviews: undefined;
   Contact: { channel?: 'booking' | 'call' | 'whatsapp' | 'email' } | undefined;
@@ -16,6 +18,6 @@ export type MainTabParamList = {
   Home: undefined;
   Gallery: undefined;
   Offers: undefined;
-  Blog: undefined;
+  AIStudio: undefined;
   Profile: undefined;
 };

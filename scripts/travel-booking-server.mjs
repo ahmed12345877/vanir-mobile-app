@@ -136,6 +136,53 @@ const travelEssentials = [
   },
 ];
 
+const aiStudioTemplates = [
+  {
+    id: 'luxury-arrival',
+    title: 'Luxury Arrival Campaign',
+    prompt: 'Create a luxury desert arrival campaign with cinematic sunset lighting, premium travelers, and VANIR-level elegance.',
+  },
+  {
+    id: 'esim-launch',
+    title: 'eSIM Launch Visual',
+    prompt: 'Design a premium eSIM launch visual for international travelers with a clean futuristic style and mobile-first clarity.',
+  },
+  {
+    id: 'visa-concierge',
+    title: 'Visa Concierge Hero',
+    prompt: 'Generate a hero concept for a visa concierge service with refined documents, soft gold details, and executive calm.',
+  },
+  {
+    id: 'insurance-reassurance',
+    title: 'Insurance Reassurance',
+    prompt: 'Build an insurance reassurance campaign for luxury travel with polished medical and baggage protection storytelling.',
+  },
+];
+
+const aiStudioBrandKits = [
+  {
+    id: 'imperial-sand',
+    title: 'Imperial Sand',
+    palette: 'Sand, obsidian, antique gold',
+    tone: 'Quiet luxury with destination authority',
+    usage: 'Best for flagship travel campaigns and premium booking launches.',
+  },
+  {
+    id: 'midnight-nile',
+    title: 'Midnight Nile',
+    palette: 'Midnight blue, silver mist, deep teal',
+    tone: 'Modern editorial with technological confidence',
+    usage: 'Best for AI Studio, eSIM, and digital-first product storytelling.',
+  },
+  {
+    id: 'royal-dune',
+    title: 'Royal Dune',
+    palette: 'Warm clay, pearl, champagne bronze',
+    tone: 'Warm premium hospitality with sales readiness',
+    usage: 'Best for hotel, package, and seasonal promotion rollouts.',
+  },
+];
+
 function sendJson(response, statusCode, payload) {
   response.writeHead(statusCode, {
     'Content-Type': 'application/json',
@@ -156,6 +203,10 @@ function confirmation(prefix) {
 
 function normalizeCategory(value) {
   return normalize(value);
+}
+
+function findBrandKit(brandKitId) {
+  return aiStudioBrandKits.find(kit => kit.id === brandKitId) ?? aiStudioBrandKits[1];
 }
 
 function parseUploadedFilename(buffer) {
@@ -275,6 +326,74 @@ const server = http.createServer(async (request, response) => {
     }
 
     sendJson(response, 400, { error: 'Unsupported category.' });
+    return;
+  }
+
+  if (request.url === '/api/mobile/ai-studio/templates') {
+    sendJson(response, 200, { templates: aiStudioTemplates });
+    return;
+  }
+
+  if (request.url === '/api/mobile/ai-studio/brand-kits') {
+    sendJson(response, 200, { brandKits: aiStudioBrandKits });
+    return;
+  }
+
+  if (request.url === '/api/mobile/ai-studio/generate-image') {
+    const prompt = String(body.prompt || '').trim();
+    if (!prompt) {
+      sendJson(response, 400, { error: 'Prompt is required.' });
+      return;
+    }
+
+    const brandKit = findBrandKit(body.brandKitId);
+    sendJson(response, 200, {
+      concepts: [
+        {
+          title: 'Hero Campaign Frame',
+          style: brandKit.title,
+          body: `${prompt} Focus on a bold hero composition, elevated wardrobe styling, premium travel cues, and a polished cinematic finish using the ${brandKit.palette} palette.`,
+        },
+        {
+          title: 'Social Story Variant',
+          style: 'Vertical Motion',
+          body: `${prompt} Adapt for story and reels with strong foreground depth, a clear service focal point, and overlay-safe space for short launch copy.`,
+        },
+        {
+          title: 'Performance Ad Variant',
+          style: 'Conversion-led',
+          body: `${prompt} Keep the frame cleaner and product-centric so booking, visa, eSIM, or insurance hooks remain legible in paid placements.`,
+        },
+      ],
+    });
+    return;
+  }
+
+  if (request.url === '/api/mobile/ai-studio/generate-copy') {
+    const brief = String(body.brief || '').trim();
+    if (!brief) {
+      sendJson(response, 400, { error: 'Campaign brief is required.' });
+      return;
+    }
+
+    const audience = String(body.audience || 'premium travelers').trim();
+    const brandKit = findBrandKit(body.brandKitId);
+    sendJson(response, 200, {
+      results: [
+        {
+          language: 'English',
+          hook: `Turn ${brief} into a premium conversion moment.`,
+          body: `Built for ${audience}, this campaign positions VANIR as the refined choice for travelers who want convenience, confidence, and a stronger luxury standard from planning to departure, shaped through the ${brandKit.title} direction.`,
+          cta: 'Launch the journey with VANIR.',
+        },
+        {
+          language: 'Arabic',
+          hook: `حوّل ${brief} إلى تجربة بيع فاخرة ومباشرة.`,
+          body: `مصمم خصيصاً لـ ${audience} مع رسالة تبرز فانير كخيار راقٍ يجمع بين السهولة والثقة والخدمة المتكاملة من أول خطوة حتى المغادرة، مع توجيه بصري من هوية ${brandKit.title}.`,
+          cta: 'ابدأ رحلتك مع فانير الآن.',
+        },
+      ],
+    });
     return;
   }
 

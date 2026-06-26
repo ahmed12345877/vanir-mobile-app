@@ -2,6 +2,7 @@ import React from 'react';
 import { StatusBar } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { NavigationContainer, DefaultTheme } from '@react-navigation/native';
+import { CartProvider } from './src/context/CartContext';
 import { AppProviders } from './src/lib/trpc';
 import { AuthProvider } from './src/context/AuthContext';
 import { RootNavigator } from './src/navigation/RootNavigator';
@@ -24,10 +25,12 @@ function App(): React.JSX.Element {
     <SafeAreaProvider>
       <AppProviders>
         <AuthProvider>
-          <NavigationContainer theme={navigationTheme}>
-            <StatusBar barStyle="light-content" backgroundColor={colors.background} />
-            <RootNavigator />
-          </NavigationContainer>
+          <CartProvider>
+            <NavigationContainer theme={navigationTheme}>
+              <StatusBar barStyle="light-content" backgroundColor={colors.background} />
+              <RootNavigator />
+            </NavigationContainer>
+          </CartProvider>
         </AuthProvider>
       </AppProviders>
     </SafeAreaProvider>

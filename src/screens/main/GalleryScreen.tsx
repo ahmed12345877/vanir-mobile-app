@@ -55,8 +55,8 @@ export function GalleryScreen() {
 
   return (
     <Screen
-      title="Gallery"
-      subtitle="Public visual content comes from the same gallery data used by the web experience."
+      title="Visual Gallery"
+      subtitle="A more premium visual browsing experience with stronger image framing, cleaner filters, and better mobile rhythm."
       actions={<SupportActionStrip focus="whatsapp" />}>
       <SectionCard>
         <Text style={screenStyles.sectionTitle}>Visual story</Text>
@@ -82,10 +82,6 @@ export function GalleryScreen() {
         contentContainerStyle={styles.list}
         renderItem={({ item }) => (
           <SectionCard>
-            <Text style={screenStyles.label}>{item.category ?? 'Experience'}</Text>
-            <Text style={screenStyles.sectionTitle}>{item.title ?? 'Untitled gallery item'}</Text>
-            <Text style={screenStyles.body}>{item.location ?? item.description ?? 'Available from the existing VANIR gallery feed.'}</Text>
-
             {pickFirstMediaUrl(item.imageUrl, item.coverImageUrl, item.thumbnailUrl) ? (
               <View style={styles.mediaFrame}>
                 <Image source={{ uri: pickFirstMediaUrl(item.imageUrl, item.coverImageUrl, item.thumbnailUrl) ?? undefined }} style={styles.mediaImage} />
@@ -96,6 +92,9 @@ export function GalleryScreen() {
                 <Text style={styles.placeholderText}>No image attached to this item yet</Text>
               </View>
             )}
+            <Text style={screenStyles.label}>{item.category ?? 'Experience'}</Text>
+            <Text style={styles.galleryTitle}>{item.title ?? 'Untitled gallery item'}</Text>
+            <Text style={screenStyles.body}>{item.location ?? item.description ?? 'Available from the existing VANIR gallery feed.'}</Text>
           </SectionCard>
         )}
         ListEmptyComponent={<Text style={styles.emptyText}>No gallery items are available yet.</Text>}
@@ -131,15 +130,19 @@ const styles = StyleSheet.create({
   list: {
     gap: 12,
   },
+  galleryTitle: {
+    color: colors.textPrimary,
+    fontSize: 20,
+    fontWeight: '800',
+  },
   mediaFrame: {
     borderRadius: 16,
     overflow: 'hidden',
     backgroundColor: colors.surfaceAlt,
-    marginTop: 4,
   },
   mediaImage: {
     width: '100%',
-    height: 180,
+    height: 220,
   },
   mediaPlaceholder: {
     alignItems: 'center',

@@ -1,13 +1,19 @@
 import React, { useState } from 'react';
 import { Alert, Image, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import { useNavigation } from '@react-navigation/native';
+import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { CounterInput } from '../../components/CounterInput';
 import { InlineCalendarField } from '../../components/InlineCalendarField';
 import { SupportActionStrip } from '../../components/SupportActionStrip';
 import { Screen, SectionCard, screenStyles } from '../../components/Screen';
-import { bookFlight, searchFlights, type FlightOffer } from '../../services/travelBooking';
+import { useCart } from '../../context/CartContext';
+import type { RootStackParamList } from '../../navigation/types';
+import { searchFlights, type FlightOffer } from '../../services/travelBooking';
 import { colors } from '../../theme/colors';
 
 export function FlightBookingScreen() {
+  const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
+  const { addItem } = useCart();
   const [origin, setOrigin] = useState('London Heathrow');
   const [destination, setDestination] = useState('Cairo');
   const [departureDate, setDepartureDate] = useState('');
@@ -23,8 +29,6 @@ export function FlightBookingScreen() {
   const [offers, setOffers] = useState<FlightOffer[]>([]);
   const [selectedOfferId, setSelectedOfferId] = useState('');
   const [isSearching, setIsSearching] = useState(false);
-  const [isBooking, setIsBooking] = useState(false);
-
   const selectedOffer = offers.find(offer => offer.id === selectedOfferId) ?? offers[0];
 
   async function handleSearch() {
@@ -42,15 +46,20 @@ export function FlightBookingScreen() {
     }
   }
 
-  async function handleBooking() {
+  function handleBooking() {
     if (!selectedOfferId) {
       Alert.alert('Select a flight', 'Search first and choose one flight offer.');
       return;
     }
 
-    try {
-      setIsBooking(true);
-      const booking = await bookFlight({
+    addItem({
+      id: `flight-${selectedOfferId}`,
+      kind: 'flight',
+      title: selectedOffer?.airline ?? 'Flight booking',
+      subtitle: selectedOffer?.route ?? `${origin} to ${destination}`,
+      price: selectedOffer?.price ?? 'Flight pricing',
+      imageUrl: selectedOffer?.imageUrl,
+      payload: {
         offerId: selectedOfferId,
         guestName,
         guestEmail,
@@ -59,13 +68,11 @@ export function FlightBookingScreen() {
         dates: { from: departureDate, to: returnDate },
         details: { origin, destination, cabin, seatPreference, baggagePlan },
         specialRequests,
-      });
-      Alert.alert('Flight booked', `Confirmation code: ${booking.confirmationCode}`);
-    } catch (error) {
-      Alert.alert('Booking failed', error instanceof Error ? error.message : 'Please try again.');
-    } finally {
-      setIsBooking(false);
-    }
+      },
+    });
+
+    Alert.alert('Added to cart', 'Flight selection was saved in unified checkout.');
+    navigation.navigate('UnifiedCheckout');
   }
 
   return (
@@ -138,8 +145,8 @@ export function FlightBookingScreen() {
           <TextInput style={styles.input} value={guestName} onChangeText={setGuestName} placeholder="Guest name" placeholderTextColor={colors.textMuted} />
           <TextInput style={styles.input} value={guestEmail} onChangeText={setGuestEmail} placeholder="Guest email" placeholderTextColor={colors.textMuted} autoCapitalize="none" keyboardType="email-address" />
           <TextInput style={[styles.input, styles.textArea]} value={specialRequests} onChangeText={setSpecialRequests} placeholder="Special requests" placeholderTextColor={colors.textMuted} multiline />
-          <Pressable style={styles.button} onPress={handleBooking} disabled={isBooking}>
-            <Text style={styles.buttonText}>{isBooking ? 'Confirming...' : 'Confirm flight booking'}</Text>
+          <Pressable style={styles.button} onPress={handleBooking}>
+            <Text style={styles.buttonText}>Add flight to cart</Text>
           </Pressable>
         </SectionCard>
       ) : null}

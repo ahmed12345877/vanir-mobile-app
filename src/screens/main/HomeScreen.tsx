@@ -2,8 +2,6 @@ import React from 'react';
 import { Image, Pressable, StyleSheet, Text, View } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { IconBadge } from '../../components/IconBadge';
-import { SupportActionStrip } from '../../components/SupportActionStrip';
 import { Screen, SectionCard, screenStyles } from '../../components/Screen';
 import { companyContent } from '../../content/companyContent';
 import { useAuth } from '../../context/AuthContext';
@@ -11,154 +9,136 @@ import { trpc } from '../../lib/trpc';
 import type { RootStackParamList } from '../../navigation/types';
 import { colors } from '../../theme/colors';
 
-const quickActions = [
-  { label: 'Book a package', route: 'Booking' as const, icon: 'booking' as const },
-  { label: 'Travel essentials', route: 'TravelEssentials' as const, icon: 'reviews' as const },
-  { label: 'Read reviews', route: 'Reviews' as const, icon: 'reviews' as const },
-  { label: 'Sign in', route: 'Login' as const, icon: 'signIn' as const },
+const heroCards = [
+  {
+    id: 'booking',
+    label: 'Book',
+    title: 'Luxury Packages',
+    subtitle: 'Cruises, private tours, and curated itineraries.',
+    imageUrl: companyContent.packages[0]?.imageUrl,
+    action: 'Booking' as const,
+  },
+  {
+    id: 'offers',
+    label: 'Offers',
+    title: 'Best Deals',
+    subtitle: 'Seasonal savings and VIP travel privileges.',
+    imageUrl: companyContent.packages[1]?.imageUrl,
+    action: 'OffersTab' as const,
+  },
+  {
+    id: 'ai',
+    label: 'AI Studio',
+    title: 'Create Visuals',
+    subtitle: 'Generate premium travel content inside the app.',
+    imageUrl: 'https://d2xsxph8kpxj0f.cloudfront.net/310519663477605010/hMv7CdB7RdAWDPc2Ku9pP8/egypt-pyramids-hero-iqbfDkZV4VwqjH9bTnSoDx.webp',
+    action: 'AIStudio' as const,
+  },
+];
+
+const serviceButtons = [
+  { title: 'Packages', subtitle: 'Curated luxury trips', accent: '#d4a853', route: 'Booking' as const },
+  { title: 'Flights', subtitle: 'Premium air routes', accent: '#78b8ff', route: 'FlightBooking' as const },
+  { title: 'Hotels', subtitle: '5-star stays', accent: '#8cd8b0', route: 'HotelBooking' as const },
+  { title: 'Visa / eSIM', subtitle: 'Travel essentials', accent: '#f29a6a', route: 'TravelEssentials' as const },
+  { title: 'Offers', subtitle: 'Hot seasonal deals', accent: '#c78cff', route: 'OffersTab' as const },
+  { title: 'Reviews', subtitle: 'Trusted feedback', accent: '#ffd36e', route: 'Reviews' as const },
 ];
 
 export function HomeScreen() {
-  const { isAuthenticated } = useAuth();
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
+  const { isAuthenticated } = useAuth();
   const offersQuery = trpc.offers.listActive.useQuery();
   const blogQuery = trpc.blog.list.useQuery({ limit: 3 });
   const galleryQuery = trpc.gallery.listVisible.useQuery();
-  const destinations = companyContent.destinations.slice(0, 4);
-  const packages = companyContent.packages.slice(0, 4);
-  const testimonials = companyContent.testimonials.slice(0, 2);
-  const articles = companyContent.articles.slice(0, 3);
+  const featuredDestinations = companyContent.destinations.slice(0, 3);
+
+  const goToHero = (action: (typeof heroCards)[number]['action']) => {
+    if (action === 'OffersTab') {
+      (navigation as any).navigate('MainTabs', { screen: 'Offers' });
+      return;
+    }
+
+    navigation.navigate(action);
+  };
+
+  const goToService = (route: (typeof serviceButtons)[number]['route']) => {
+    if (route === 'OffersTab') {
+      (navigation as any).navigate('MainTabs', { screen: 'Offers' });
+      return;
+    }
+
+    navigation.navigate(route);
+  };
 
   return (
     <Screen
-      title={companyContent.brand}
-      subtitle={companyContent.tagline}
-      actions={<SupportActionStrip focus="book" />}>
+      title="Luxury Travel, Better Organized"
+      subtitle="A cleaner mobile home with strong visuals, direct actions, and no accidental navigation overlap.">
       <SectionCard>
         <Text style={screenStyles.label}>{isAuthenticated ? 'Signed in' : 'Guest mode'}</Text>
-        <Text style={screenStyles.sectionTitle}>{companyContent.heroTitle}</Text>
+        <Text style={styles.heroIntroTitle}>{companyContent.heroTitle}</Text>
         <Text style={screenStyles.body}>{companyContent.heroBody}</Text>
-        <Pressable style={styles.primaryButton} onPress={() => navigation.navigate('Booking')}>
-          <Text style={styles.primaryButtonText}>Book Your Trip Now</Text>
-        </Pressable>
-        <View style={styles.statsRow}>
-          {companyContent.stats.map(stat => (
-            <View key={stat.label} style={styles.statCard}>
-              <Text style={styles.statValue}>{stat.value}</Text>
-              <Text style={styles.statLabel}>{stat.label}</Text>
-            </View>
-          ))}
-        </View>
       </SectionCard>
 
-      <View style={styles.actionGrid}>
-        {quickActions.map(action => (
-          <Pressable key={action.label} style={styles.actionTile} onPress={() => navigation.navigate(action.route)}>
-            <IconBadge name={action.icon} size={20} active />
-            <Text style={styles.actionLabel}>{action.label}</Text>
-          </Pressable>
-        ))}
+      <View style={styles.heroGrid}>
+        <Pressable style={styles.heroLargeCard} onPress={() => goToHero(heroCards[0].action)}>
+          <Image source={{ uri: heroCards[0].imageUrl }} style={styles.heroLargeImage} />
+          <View style={styles.heroOverlay}>
+            <Text style={styles.heroBadge}>{heroCards[0].label}</Text>
+            <Text style={styles.heroLargeTitle}>{heroCards[0].title}</Text>
+            <Text style={styles.heroSubtitle}>{heroCards[0].subtitle}</Text>
+          </View>
+        </Pressable>
+
+        <View style={styles.heroColumn}>
+          {heroCards.slice(1).map(card => (
+            <Pressable key={card.id} style={styles.heroSmallCard} onPress={() => goToHero(card.action)}>
+              <Image source={{ uri: card.imageUrl }} style={styles.heroSmallImage} />
+              <View style={styles.heroOverlay}>
+                <Text style={styles.heroBadge}>{card.label}</Text>
+                <Text style={styles.heroSmallTitle}>{card.title}</Text>
+              </View>
+            </Pressable>
+          ))}
+        </View>
       </View>
 
       <SectionCard>
-        <Text style={screenStyles.sectionTitle}>What VANIR GROUP offers you</Text>
+        <Text style={screenStyles.sectionTitle}>Core Services</Text>
         <View style={styles.serviceGrid}>
-          {companyContent.services.map(service => (
-            <View key={service.title} style={styles.serviceCard}>
-              <IconBadge name={service.icon} size={18} active />
-              <Text style={styles.serviceTitle}>{service.title}</Text>
-              <Text style={styles.serviceText}>{service.description}</Text>
-            </View>
-          ))}
-        </View>
-      </SectionCard>
-
-      <SectionCard>
-        <Text style={screenStyles.sectionTitle}>Featured destinations</Text>
-        <View style={styles.featureGrid}>
-          {destinations.map(destination => (
-            <View key={destination.name} style={styles.featureCard}>
-              <Image source={{ uri: destination.imageUrl }} style={styles.featureImage} />
-              <Text style={screenStyles.label}>{destination.category}</Text>
-              <Text style={styles.featureTitle}>{destination.name}</Text>
-              <Text style={screenStyles.body}>{destination.region}</Text>
-              <Text style={styles.featureMeta}>{destination.travelers}</Text>
-            </View>
-          ))}
-        </View>
-      </SectionCard>
-
-      <SectionCard>
-        <Text style={screenStyles.sectionTitle}>Top travel packages</Text>
-        <View style={styles.packageList}>
-          {packages.map(packageItem => (
-            <View key={packageItem.title} style={styles.packageCard}>
-              <Image source={{ uri: packageItem.imageUrl }} style={styles.packageImage} />
-              <View style={styles.packageBody}>
-                <Text style={screenStyles.label}>{packageItem.category}</Text>
-                <Text style={styles.featureTitle}>{packageItem.title}</Text>
-                <Text style={screenStyles.body}>{packageItem.region}</Text>
-                <Text style={styles.packageMeta}>{packageItem.price} · {packageItem.duration} · {packageItem.rating}</Text>
-              </View>
-            </View>
-          ))}
-        </View>
-      </SectionCard>
-
-      <SectionCard>
-        <Text style={screenStyles.sectionTitle}>Client testimonials</Text>
-        <View style={styles.testimonialList}>
-          {testimonials.map(testimonial => (
-            <View key={testimonial.name} style={styles.testimonialCard}>
-              <Image source={{ uri: testimonial.avatarUrl }} style={styles.avatar} />
-              <View style={styles.testimonialBody}>
-                <Text style={styles.featureTitle}>{testimonial.name}</Text>
-                <Text style={screenStyles.label}>{testimonial.role}</Text>
-                <Text style={screenStyles.body}>{testimonial.quote}</Text>
-                <Text style={styles.featureMeta}>{testimonial.location}</Text>
-              </View>
-            </View>
-          ))}
-        </View>
-      </SectionCard>
-
-      <SectionCard>
-        <Text style={screenStyles.sectionTitle}>Travel blog & news</Text>
-        <View style={styles.articleList}>
-          {articles.map(article => (
-            <Pressable key={article.slug} onPress={() => navigation.navigate('BlogPost', { slug: article.slug, title: article.title })}>
-              <View style={styles.articleCard}>
-                <Image source={{ uri: article.imageUrl }} style={styles.articleImage} />
-                <View style={styles.articleBody}>
-                  <Text style={screenStyles.label}>{article.publishedAt}</Text>
-                  <Text style={styles.featureTitle}>{article.title}</Text>
-                  <Text style={screenStyles.body}>{article.excerpt}</Text>
-                  <Text style={styles.featureMeta}>{article.readingTime}</Text>
-                </View>
-              </View>
+          {serviceButtons.map(button => (
+            <Pressable key={button.title} style={styles.serviceButton} onPress={() => goToService(button.route)}>
+              <View style={[styles.serviceAccent, { backgroundColor: button.accent }]} />
+              <Text style={styles.serviceButtonText}>{button.title}</Text>
+              <Text style={styles.serviceButtonSubtext}>{button.subtitle}</Text>
             </Pressable>
           ))}
         </View>
       </SectionCard>
 
       <SectionCard>
-        <Text style={screenStyles.sectionTitle}>Live platform snapshot</Text>
-        <View style={styles.metricRow}>
-          <Metric label="Active offers" value={offersQuery.data?.length ?? 0} />
-          <Metric label="Blog posts" value={blogQuery.data?.length ?? 0} />
-          <Metric label="Gallery items" value={galleryQuery.data?.length ?? 0} />
+        <Text style={screenStyles.sectionTitle}>Platform Snapshot</Text>
+        <View style={styles.metricsRow}>
+          <Metric label="Offers" value={offersQuery.data?.length ?? 0} />
+          <Metric label="Blog" value={blogQuery.data?.length ?? 0} />
+          <Metric label="Gallery" value={galleryQuery.data?.length ?? 0} />
         </View>
       </SectionCard>
 
       <SectionCard>
-        <Text style={screenStyles.sectionTitle}>What was mirrored from web</Text>
-        <Text style={screenStyles.body}>
-          Home, destinations, offers, gallery, testimonials, blog, bookings, reviews, and profile were chosen as the strongest mobile-first slices from the current website.
-        </Text>
-        <View style={styles.contactPanel}>
-          <Text style={styles.contactLabel}>Need help?</Text>
-          <Text style={styles.contactText}>{companyContent.contact.email}</Text>
-          <Text style={styles.contactText}>{companyContent.contact.phone}</Text>
+        <Text style={screenStyles.sectionTitle}>Featured Destinations</Text>
+        <View style={styles.destinationList}>
+          {featuredDestinations.map(destination => (
+            <View key={destination.name} style={styles.destinationCard}>
+              <Image source={{ uri: destination.imageUrl }} style={styles.destinationImage} />
+              <View style={styles.destinationBody}>
+                <Text style={screenStyles.label}>{destination.category}</Text>
+                <Text style={styles.destinationTitle}>{destination.name}</Text>
+                <Text style={screenStyles.body}>{destination.region}</Text>
+              </View>
+            </View>
+          ))}
         </View>
       </SectionCard>
     </Screen>
@@ -175,191 +155,147 @@ function Metric({ label, value }: { label: string; value: number | string }) {
 }
 
 const styles = StyleSheet.create({
-  statsRow: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 10,
-    marginTop: 10,
-  },
-  statCard: {
-    flexBasis: '48%',
-    backgroundColor: colors.surfaceAlt,
-    borderRadius: 14,
-    borderWidth: 1,
-    borderColor: colors.border,
-    padding: 12,
-  },
-  statValue: {
-    color: colors.primary,
+  heroIntroTitle: {
+    color: colors.textPrimary,
     fontSize: 22,
-    fontWeight: '700',
+    fontWeight: '800',
   },
-  statLabel: {
-    color: colors.textSecondary,
-    fontSize: 12,
-  },
-  actionGrid: {
+  heroGrid: {
     flexDirection: 'row',
-    flexWrap: 'wrap',
     gap: 12,
   },
-  actionTile: {
-    flexBasis: '31%',
+  heroLargeCard: {
+    flex: 1.1,
+    minHeight: 260,
+    borderRadius: 22,
+    overflow: 'hidden',
     backgroundColor: colors.surface,
-    borderColor: colors.border,
-    borderWidth: 1,
-    borderRadius: 18,
-    minHeight: 88,
-    padding: 16,
-    justifyContent: 'center',
-    alignItems: 'center',
-    gap: 10,
   },
-  actionLabel: {
-    color: colors.textPrimary,
-    fontWeight: '700',
-    textAlign: 'center',
-  },
-  primaryButton: {
-    backgroundColor: colors.primary,
-    borderRadius: 14,
-    paddingVertical: 14,
-    alignItems: 'center',
-    marginTop: 6,
-  },
-  primaryButtonText: {
-    color: colors.background,
-    fontWeight: '700',
-  },
-  serviceGrid: {
+  heroColumn: {
+    flex: 0.9,
     gap: 12,
   },
-  serviceCard: {
-    backgroundColor: colors.surfaceAlt,
-    borderRadius: 16,
-    padding: 14,
-    gap: 8,
-  },
-  serviceTitle: {
-    color: colors.textPrimary,
-    fontSize: 16,
-    fontWeight: '700',
-  },
-  serviceText: {
-    color: colors.textSecondary,
-    lineHeight: 20,
-  },
-  featureGrid: {
-    gap: 12,
-  },
-  featureCard: {
-    borderRadius: 16,
+  heroSmallCard: {
+    minHeight: 124,
+    borderRadius: 22,
     overflow: 'hidden',
-    backgroundColor: colors.surfaceAlt,
+    backgroundColor: colors.surface,
   },
-  featureImage: {
+  heroLargeImage: {
     width: '100%',
-    height: 160,
+    height: '100%',
+    position: 'absolute',
   },
-  featureTitle: {
-    color: colors.textPrimary,
-    fontSize: 17,
-    fontWeight: '700',
-  },
-  featureMeta: {
-    color: colors.textMuted,
-    fontSize: 12,
-  },
-  packageList: {
-    gap: 12,
-  },
-  packageCard: {
-    borderRadius: 16,
-    overflow: 'hidden',
-    backgroundColor: colors.surfaceAlt,
-  },
-  packageImage: {
+  heroSmallImage: {
     width: '100%',
-    height: 150,
+    height: '100%',
+    position: 'absolute',
   },
-  packageBody: {
-    padding: 14,
-    gap: 6,
-  },
-  packageMeta: {
-    color: colors.primary,
-    fontSize: 13,
-    fontWeight: '700',
-  },
-  testimonialList: {
-    gap: 12,
-  },
-  testimonialCard: {
-    flexDirection: 'row',
-    gap: 12,
-    backgroundColor: colors.surfaceAlt,
-    borderRadius: 16,
-    padding: 14,
-  },
-  avatar: {
-    width: 52,
-    height: 52,
-    borderRadius: 26,
-  },
-  testimonialBody: {
+  heroOverlay: {
     flex: 1,
+    justifyContent: 'flex-end',
+    backgroundColor: 'rgba(8,8,16,0.34)',
+    padding: 14,
     gap: 4,
   },
-  articleList: {
-    gap: 12,
-  },
-  articleCard: {
-    borderRadius: 16,
+  heroBadge: {
+    alignSelf: 'flex-start',
+    backgroundColor: 'rgba(8,8,16,0.76)',
+    color: colors.primarySoft,
+    fontSize: 11,
+    fontWeight: '700',
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 999,
     overflow: 'hidden',
+    marginBottom: 4,
+  },
+  heroLargeTitle: {
+    color: colors.textPrimary,
+    fontSize: 22,
+    fontWeight: '800',
+  },
+  heroSmallTitle: {
+    color: colors.textPrimary,
+    fontSize: 16,
+    fontWeight: '800',
+  },
+  heroSubtitle: {
+    color: colors.textSecondary,
+    fontSize: 13,
+    lineHeight: 18,
+  },
+  serviceGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 10,
+  },
+  serviceButton: {
+    flexBasis: '48%',
     backgroundColor: colors.surfaceAlt,
-  },
-  articleImage: {
-    width: '100%',
-    height: 150,
-  },
-  articleBody: {
-    padding: 14,
-    gap: 6,
-  },
-  contactPanel: {
-    marginTop: 12,
-    gap: 6,
-    borderRadius: 12,
+    borderRadius: 16,
     borderWidth: 1,
     borderColor: colors.border,
-    padding: 14,
-    backgroundColor: colors.surfaceAlt,
+    paddingVertical: 16,
+    paddingHorizontal: 14,
+    minHeight: 104,
+    justifyContent: 'center',
+    gap: 6,
   },
-  contactLabel: {
-    color: colors.primarySoft,
-    fontWeight: '700',
+  serviceAccent: {
+    width: 34,
+    height: 4,
+    borderRadius: 999,
   },
-  contactText: {
+  serviceButtonText: {
+    color: colors.textPrimary,
+    fontSize: 16,
+    fontWeight: '800',
+  },
+  serviceButtonSubtext: {
     color: colors.textSecondary,
+    fontSize: 12,
+    lineHeight: 18,
   },
-  metricRow: {
+  metricsRow: {
     flexDirection: 'row',
     gap: 10,
   },
   metricCard: {
     flex: 1,
     backgroundColor: colors.surfaceAlt,
-    borderRadius: 14,
-    padding: 12,
+    borderRadius: 16,
+    padding: 14,
     gap: 4,
   },
   metricValue: {
     color: colors.primary,
     fontSize: 24,
-    fontWeight: '700',
+    fontWeight: '800',
   },
   metricLabel: {
     color: colors.textSecondary,
-    fontSize: 13,
+    fontSize: 12,
+  },
+  destinationList: {
+    gap: 12,
+  },
+  destinationCard: {
+    borderRadius: 18,
+    overflow: 'hidden',
+    backgroundColor: colors.surfaceAlt,
+  },
+  destinationImage: {
+    width: '100%',
+    height: 160,
+  },
+  destinationBody: {
+    padding: 14,
+    gap: 4,
+  },
+  destinationTitle: {
+    color: colors.textPrimary,
+    fontSize: 18,
+    fontWeight: '800',
   },
 });

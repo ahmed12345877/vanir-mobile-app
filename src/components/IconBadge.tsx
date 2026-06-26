@@ -6,7 +6,7 @@ const glyphs: Record<string, string> = {
   Home: '⌂',
   Gallery: '◫',
   Offers: '✦',
-  Blog: '⌘',
+  AIStudio: 'AI',
   Profile: '◉',
   booking: '✈',
   reviews: '★',

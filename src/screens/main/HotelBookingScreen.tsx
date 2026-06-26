@@ -1,13 +1,19 @@
 import React, { useState } from 'react';
 import { Alert, Image, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import { useNavigation } from '@react-navigation/native';
+import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { CounterInput } from '../../components/CounterInput';
 import { InlineCalendarField } from '../../components/InlineCalendarField';
 import { SupportActionStrip } from '../../components/SupportActionStrip';
 import { Screen, SectionCard, screenStyles } from '../../components/Screen';
-import { bookHotel, searchHotels, type HotelOffer } from '../../services/travelBooking';
+import { useCart } from '../../context/CartContext';
+import type { RootStackParamList } from '../../navigation/types';
+import { searchHotels, type HotelOffer } from '../../services/travelBooking';
 import { colors } from '../../theme/colors';
 
 export function HotelBookingScreen() {
+  const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
+  const { addItem } = useCart();
   const [city, setCity] = useState('Cairo');
   const [checkIn, setCheckIn] = useState('');
   const [checkOut, setCheckOut] = useState('');
@@ -22,8 +28,6 @@ export function HotelBookingScreen() {
   const [offers, setOffers] = useState<HotelOffer[]>([]);
   const [selectedOfferId, setSelectedOfferId] = useState('');
   const [isSearching, setIsSearching] = useState(false);
-  const [isBooking, setIsBooking] = useState(false);
-
   const selectedOffer = offers.find(offer => offer.id === selectedOfferId) ?? offers[0];
 
   async function handleSearch() {
@@ -41,15 +45,20 @@ export function HotelBookingScreen() {
     }
   }
 
-  async function handleBooking() {
+  function handleBooking() {
     if (!selectedOfferId) {
       Alert.alert('Select a hotel', 'Search first and choose one hotel offer.');
       return;
     }
 
-    try {
-      setIsBooking(true);
-      const booking = await bookHotel({
+    addItem({
+      id: `hotel-${selectedOfferId}`,
+      kind: 'hotel',
+      title: selectedOffer?.name ?? 'Hotel booking',
+      subtitle: selectedOffer?.location ?? city,
+      price: selectedOffer?.nightlyRate ?? 'Hotel pricing',
+      imageUrl: selectedOffer?.imageUrl,
+      payload: {
         offerId: selectedOfferId,
         guestName,
         guestEmail,
@@ -58,13 +67,11 @@ export function HotelBookingScreen() {
         dates: { from: checkIn, to: checkOut },
         details: { city, rooms, roomType, mealPlan },
         specialRequests,
-      });
-      Alert.alert('Hotel booked', `Confirmation code: ${booking.confirmationCode}`);
-    } catch (error) {
-      Alert.alert('Booking failed', error instanceof Error ? error.message : 'Please try again.');
-    } finally {
-      setIsBooking(false);
-    }
+      },
+    });
+
+    Alert.alert('Added to cart', 'Hotel selection was saved in unified checkout.');
+    navigation.navigate('UnifiedCheckout');
   }
 
   return (
@@ -129,8 +136,8 @@ export function HotelBookingScreen() {
           <TextInput style={styles.input} value={guestName} onChangeText={setGuestName} placeholder="Guest name" placeholderTextColor={colors.textMuted} />
           <TextInput style={styles.input} value={guestEmail} onChangeText={setGuestEmail} placeholder="Guest email" placeholderTextColor={colors.textMuted} autoCapitalize="none" keyboardType="email-address" />
           <TextInput style={[styles.input, styles.textArea]} value={specialRequests} onChangeText={setSpecialRequests} placeholder="Special requests" placeholderTextColor={colors.textMuted} multiline />
-          <Pressable style={styles.button} onPress={handleBooking} disabled={isBooking}>
-            <Text style={styles.buttonText}>{isBooking ? 'Confirming...' : 'Confirm hotel booking'}</Text>
+          <Pressable style={styles.button} onPress={handleBooking}>
+            <Text style={styles.buttonText}>Add hotel to cart</Text>
           </Pressable>
         </SectionCard>
       ) : null}

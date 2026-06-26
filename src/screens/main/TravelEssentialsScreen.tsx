@@ -1,21 +1,26 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { Alert, Image, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
-import DocumentPicker, { isCancel, types } from 'react-native-document-picker';
+import { useNavigation } from '@react-navigation/native';
+import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import { errorCodes, isErrorWithCode, pick, types } from '@react-native-documents/picker';
 import { SupportActionStrip } from '../../components/SupportActionStrip';
 import { Screen, SectionCard, screenStyles } from '../../components/Screen';
+import { useCart } from '../../context/CartContext';
 import { companyContent } from '../../content/companyContent';
 import {
-  checkoutTravelEssentials,
   getTravelEssentials,
   uploadVisaDocument,
   type TravelEssentialCategory,
   type TravelEssentialItem,
 } from '../../services/travelBooking';
+import type { RootStackParamList } from '../../navigation/types';
 import { colors } from '../../theme/colors';
 
 const categories: Array<TravelEssentialCategory | 'All'> = ['All', 'Visa', 'eSIM', 'Insurance'];
 
 export function TravelEssentialsScreen() {
+  const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
+  const { addItem, itemCount } = useCart();
   const [selectedCategory, setSelectedCategory] = useState<TravelEssentialCategory | 'All'>('All');
   const [selectedItemId, setSelectedItemId] = useState(companyContent.travelEssentials[0]?.id ?? '');
   const [items, setItems] = useState<TravelEssentialItem[]>(companyContent.travelEssentials.map(item => ({ ...item, highlights: [...item.highlights] })));
@@ -104,32 +109,35 @@ export function TravelEssentialsScreen() {
         throw new Error('Upload at least one visa document before checkout.');
       }
 
-      const response = await checkoutTravelEssentials({
+      addItem({
+        id: `essential-${selectedItem.id}`,
+        kind: 'essential',
         category: selectedItem.category,
-        itemId: selectedItem.id,
-        travelerName,
-        email,
-        countryOfResidence,
-        passportNumber,
-        passportExpiry,
-        uploadedDocumentIds: visaUploadedFiles.map(file => file.fileId),
-        phoneNumber,
-        activationDevice,
-        destination,
-        coverageStart,
-        coverageEnd,
-        emergencyContact,
-        notes,
+        title: selectedItem.title,
+        subtitle: `${selectedItem.provider} · ${selectedItem.summary}`,
+        price: selectedItem.price,
+        imageUrl: selectedItem.imageUrl,
+        payload: {
+          category: selectedItem.category,
+          itemId: selectedItem.id,
+          travelerName,
+          email,
+          countryOfResidence,
+          passportNumber,
+          passportExpiry,
+          uploadedDocumentIds: visaUploadedFiles.map(file => file.fileId),
+          phoneNumber,
+          activationDevice,
+          destination,
+          coverageStart,
+          coverageEnd,
+          emergencyContact,
+          notes,
+        },
       });
 
-      const message = [
-        `Confirmation: ${response.confirmationCode}`,
-        response.visaCaseNumber ? `Visa case: ${response.visaCaseNumber}` : null,
-        response.activationCode ? `eSIM activation: ${response.activationCode}` : null,
-        response.policyNumber ? `Policy number: ${response.policyNumber}` : null,
-      ].filter(Boolean).join('\n');
-
-      Alert.alert('Travel essential purchased', message);
+      Alert.alert('Added to cart', 'Travel essential was saved in unified checkout.');
+      navigation.navigate('UnifiedCheckout');
     } catch (error) {
       Alert.alert('Checkout failed', error instanceof Error ? error.message : 'Please try again.');
     } finally {
@@ -139,7 +147,7 @@ export function TravelEssentialsScreen() {
 
   async function handlePickVisaFiles() {
     try {
-      const picked = await DocumentPicker.pick({
+      const picked = await pick({
         type: [types.images, types.pdf],
         allowMultiSelection: true,
       });
@@ -152,7 +160,7 @@ export function TravelEssentialsScreen() {
 
       setVisaSelectedFiles(current => [...current, ...normalized]);
     } catch (error) {
-      if (isCancel(error)) {
+      if (isErrorWithCode(error) && error.code === errorCodes.OPERATION_CANCELED) {
         return;
       }
       Alert.alert('Document picker error', error instanceof Error ? error.message : 'Unable to pick files.');
@@ -183,10 +191,19 @@ export function TravelEssentialsScreen() {
   }
 
   return (
-    <Screen title="Travel essentials" subtitle="Organized extras for visa support, eSIM activation, and travel insurance inside the same app flow." actions={<SupportActionStrip focus="contact" />}>
+    <Screen
+      title="Travel essentials"
+      subtitle="Visa, eSIM, and insurance are now presented as premium in-app products with a clearer activation and checkout flow."
+      actions={<SupportActionStrip focus="contact" />}>
       <SectionCard>
-        <Text style={screenStyles.sectionTitle}>Before you fly</Text>
-        <Text style={screenStyles.body}>These essentials are organized as booking-adjacent services so the user can complete paperwork, connectivity, and protection before departure.</Text>
+        <Text style={screenStyles.label}>Departure prep</Text>
+        <Text style={styles.heroTitle}>Complete paperwork, connectivity, and protection before the trip starts.</Text>
+        <Text style={screenStyles.body}>
+          These services stay inside the app flow so the traveler can move from selection to upload, activation, and checkout without leaving the product.
+        </Text>
+        <Pressable style={styles.cartButton} onPress={() => navigation.navigate('UnifiedCheckout')}>
+          <Text style={styles.cartButtonText}>Open unified checkout · {itemCount} item(s)</Text>
+        </Pressable>
         <View style={styles.metricsRow}>
           <Metric label="Visa" value={groupedCount.Visa} />
           <Metric label="eSIM" value={groupedCount.eSIM} />
@@ -196,7 +213,13 @@ export function TravelEssentialsScreen() {
 
       <View style={styles.filterRow}>
         {categories.map(category => (
-          <Pressable key={category} style={[styles.filterChip, selectedCategory === category && styles.filterChipActive]} onPress={() => { setSelectedCategory(category); resetFormForCategory(category === 'All' ? undefined : category); }}>
+          <Pressable
+            key={category}
+            style={[styles.filterChip, selectedCategory === category && styles.filterChipActive]}
+            onPress={() => {
+              setSelectedCategory(category);
+              resetFormForCategory(category === 'All' ? undefined : category);
+            }}>
             <Text style={[styles.filterText, selectedCategory === category && styles.filterTextActive]}>{category}</Text>
           </Pressable>
         ))}
@@ -204,30 +227,49 @@ export function TravelEssentialsScreen() {
 
       <View style={styles.stack}>
         {items.map(item => (
-          <Pressable key={item.id} onPress={() => { setSelectedItemId(item.id); setSelectedCategory(item.category); resetFormForCategory(item.category); }}>
-          <SectionCard>
-            <Image source={{ uri: item.imageUrl }} style={styles.image} />
-            <Text style={screenStyles.label}>{item.category}</Text>
-            <Text style={screenStyles.sectionTitle}>{item.title}</Text>
-            <Text style={styles.provider}>{item.provider}</Text>
-            <Text style={screenStyles.body}>{item.summary}</Text>
-            <Text style={styles.price}>{item.price}</Text>
-            <View style={styles.highlightsRow}>
-              {item.highlights.map(highlight => (
-                <View key={highlight} style={styles.highlightChip}>
-                  <Text style={styles.highlightText}>{highlight}</Text>
-                </View>
-              ))}
-            </View>
-          </SectionCard>
+          <Pressable
+            key={item.id}
+            onPress={() => {
+              setSelectedItemId(item.id);
+              setSelectedCategory(item.category);
+              resetFormForCategory(item.category);
+            }}>
+            <View style={selectedItemId === item.id ? styles.selectedCard : undefined}>
+              <SectionCard>
+              <Image source={{ uri: item.imageUrl }} style={styles.image} />
+              <View style={styles.cardHeaderRow}>
+                <Text style={screenStyles.label}>{item.category}</Text>
+                <Text style={styles.provider}>{item.provider}</Text>
+              </View>
+              <Text style={screenStyles.sectionTitle}>{item.title}</Text>
+              <Text style={screenStyles.body}>{item.summary}</Text>
+              <View style={styles.priceRow}>
+                <Text style={styles.price}>{item.price}</Text>
+                <Text style={styles.selectionState}>{selectedItemId === item.id ? 'Selected' : 'Tap to configure'}</Text>
+              </View>
+              <View style={styles.highlightsRow}>
+                {item.highlights.map(highlight => (
+                  <View key={highlight} style={styles.highlightChip}>
+                    <Text style={styles.highlightText}>{highlight}</Text>
+                  </View>
+                ))}
+              </View>
+                </SectionCard>
+              </View>
           </Pressable>
         ))}
       </View>
 
       {selectedItem ? (
         <SectionCard>
+          <Text style={screenStyles.label}>Selected service</Text>
           <Text style={screenStyles.sectionTitle}>Checkout & activation</Text>
-          <Text style={screenStyles.body}>Selected: {selectedItem.title}</Text>
+          <Text style={screenStyles.body}>You are configuring {selectedItem.title}. Complete the traveler details below, then finish checkout.</Text>
+          <View style={styles.checkoutRibbon}>
+            <Text style={styles.checkoutRibbonTitle}>{selectedItem.category}</Text>
+            <Text style={styles.checkoutRibbonPrice}>{selectedItem.price}</Text>
+          </View>
+
           <TextInput style={styles.input} value={travelerName} onChangeText={setTravelerName} placeholder="Traveler name" placeholderTextColor={colors.textMuted} />
           <TextInput style={styles.input} value={email} onChangeText={setEmail} placeholder="Email address" placeholderTextColor={colors.textMuted} autoCapitalize="none" keyboardType="email-address" />
 
@@ -291,7 +333,7 @@ export function TravelEssentialsScreen() {
           ) : null}
 
           <Pressable style={styles.button} onPress={handleCheckout} disabled={isCheckingOut}>
-            <Text style={styles.buttonText}>{isCheckingOut ? 'Processing...' : selectedItem.category === 'eSIM' ? 'Activate eSIM' : 'Checkout now'}</Text>
+            <Text style={styles.buttonText}>{isCheckingOut ? 'Saving...' : 'Add to unified checkout'}</Text>
           </Pressable>
         </SectionCard>
       ) : null}
@@ -311,6 +353,9 @@ function Metric({ label, value }: { label: string; value: number }) {
 }
 
 const styles = StyleSheet.create({
+  heroTitle: { color: colors.textPrimary, fontSize: 22, fontWeight: '800', lineHeight: 29 },
+  cartButton: { alignItems: 'center', backgroundColor: colors.primary, borderRadius: 14, paddingVertical: 14 },
+  cartButtonText: { color: colors.background, fontWeight: '800' },
   metricsRow: { flexDirection: 'row', gap: 10 },
   metricCard: { flex: 1, backgroundColor: colors.surfaceAlt, borderRadius: 14, borderWidth: 1, borderColor: colors.border, padding: 12 },
   metricValue: { color: colors.primary, fontSize: 22, fontWeight: '700' },
@@ -322,14 +367,21 @@ const styles = StyleSheet.create({
   filterTextActive: { color: colors.background },
   stack: { gap: 12 },
   image: { width: '100%', height: 200, borderRadius: 18 },
+  selectedCard: { borderColor: colors.primary, borderWidth: 1 },
+  cardHeaderRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', gap: 8 },
   provider: { color: colors.primarySoft, fontWeight: '600' },
+  priceRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', gap: 12 },
   price: { color: colors.primary, fontSize: 16, fontWeight: '700' },
+  selectionState: { color: colors.textMuted, fontSize: 12, fontWeight: '700' },
   input: { backgroundColor: colors.surfaceAlt, borderWidth: 1, borderColor: colors.border, borderRadius: 12, color: colors.textPrimary, paddingHorizontal: 14, paddingVertical: 12 },
   dualRow: { flexDirection: 'row', gap: 10 },
   dualInput: { flex: 1 },
   textArea: { minHeight: 100, textAlignVertical: 'top' },
   button: { alignItems: 'center', backgroundColor: colors.primary, borderRadius: 12, paddingVertical: 14 },
   buttonText: { color: colors.background, fontWeight: '700' },
+  checkoutRibbon: { backgroundColor: colors.surfaceAlt, borderRadius: 14, borderWidth: 1, borderColor: colors.border, padding: 14, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+  checkoutRibbonTitle: { color: colors.textPrimary, fontSize: 15, fontWeight: '800' },
+  checkoutRibbonPrice: { color: colors.primary, fontSize: 15, fontWeight: '800' },
   uploadCard: { backgroundColor: colors.surfaceAlt, borderWidth: 1, borderColor: colors.border, borderRadius: 12, padding: 12, gap: 10 },
   uploadTitle: { color: colors.textPrimary, fontWeight: '700' },
   uploadSubtitle: { color: colors.textSecondary, fontSize: 12, lineHeight: 18 },

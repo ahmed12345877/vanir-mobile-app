@@ -1,15 +1,19 @@
 import React, { useState } from 'react';
 import { Alert, Image, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import { useNavigation } from '@react-navigation/native';
+import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { CounterInput } from '../../components/CounterInput';
 import { InlineCalendarField } from '../../components/InlineCalendarField';
 import { SupportActionStrip } from '../../components/SupportActionStrip';
 import { Screen, SectionCard, screenStyles } from '../../components/Screen';
 import { companyContent } from '../../content/companyContent';
-import { trpc } from '../../lib/trpc';
+import { useCart } from '../../context/CartContext';
+import type { RootStackParamList } from '../../navigation/types';
 import { colors } from '../../theme/colors';
 
 export function PackageBookingScreen() {
-  const createBooking = trpc.bookings.create.useMutation();
+  const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
+  const { addItem } = useCart();
   const [selectedPackage, setSelectedPackage] = useState(companyContent.packages[0]?.title ?? '');
   const [guestName, setGuestName] = useState('');
   const [guestEmail, setGuestEmail] = useState('');
@@ -22,28 +26,29 @@ export function PackageBookingScreen() {
 
   const currentPackage = companyContent.packages.find(item => item.title === selectedPackage) ?? companyContent.packages[0];
 
-  async function submit() {
-    try {
-      const booking = await createBooking.mutateAsync({
+  function submit() {
+    addItem({
+      id: `package-${selectedPackage}`,
+      kind: 'package',
+      title: selectedPackage,
+      subtitle: `${currentPackage.region} · ${travelStyle}`,
+      price: currentPackage.price,
+      imageUrl: currentPackage.imageUrl,
+      payload: {
         packageName: selectedPackage,
         guestName,
         guestEmail,
         adults,
-        paymentMethod: 'credit_card',
-        currency: 'USD',
-        specialRequests: [
-          `Children: ${children}`,
-          dateFrom ? `Date from: ${dateFrom}` : null,
-          dateTo ? `Date to: ${dateTo}` : null,
-          `Travel style: ${travelStyle}`,
-          specialRequests ? `Notes: ${specialRequests}` : null,
-        ].filter(Boolean).join('\n'),
-      });
+        children,
+        dateFrom,
+        dateTo,
+        travelStyle,
+        specialRequests,
+      },
+    });
 
-      Alert.alert('Package booked', `Confirmation code: ${(booking as { confirmationCode?: string }).confirmationCode ?? 'Pending'}`);
-    } catch (error) {
-      Alert.alert('Booking failed', error instanceof Error ? error.message : 'Please try again.');
-    }
+    Alert.alert('Added to cart', 'Package booking was saved in unified checkout.');
+    navigation.navigate('UnifiedCheckout');
   }
 
   return (
@@ -84,8 +89,8 @@ export function PackageBookingScreen() {
         <TextInput style={styles.input} value={guestEmail} onChangeText={setGuestEmail} placeholder="Guest email" placeholderTextColor={colors.textMuted} autoCapitalize="none" keyboardType="email-address" />
         <TextInput style={styles.input} value={travelStyle} onChangeText={setTravelStyle} placeholder="Travel style" placeholderTextColor={colors.textMuted} />
         <TextInput style={[styles.input, styles.textArea]} value={specialRequests} onChangeText={setSpecialRequests} placeholder="Special requests" placeholderTextColor={colors.textMuted} multiline />
-        <Pressable style={styles.button} onPress={submit} disabled={createBooking.isPending}>
-          <Text style={styles.buttonText}>{createBooking.isPending ? 'Submitting...' : 'Confirm package booking'}</Text>
+        <Pressable style={styles.button} onPress={submit}>
+          <Text style={styles.buttonText}>Add package to cart</Text>
         </Pressable>
       </SectionCard>
     </Screen>

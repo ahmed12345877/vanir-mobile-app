@@ -32,15 +32,17 @@ export function ProfileScreen() {
     return (
       <Screen
         title="Profile"
-        subtitle="Sign in to reuse the current VANIR account, bookings, reviews, and customer history."
+        subtitle="A premium member area for bookings, loyalty, AI access, and secure account controls."
         actions={<SupportActionStrip focus="contact" />}>
         <SectionCard>
-          <Text style={screenStyles.sectionTitle}>Contact the VANIR travel desk</Text>
-          <Text style={screenStyles.body}>{companyContent.contact.address}</Text>
-          <Text style={screenStyles.body}>{companyContent.contact.email}</Text>
-          <Text style={screenStyles.body}>{companyContent.contact.phone}</Text>
           <Image source={{ uri: companyContent.articles[0].imageUrl }} style={styles.heroImage} />
-          <Text style={screenStyles.body}>This screen mirrors the protected profile routes from the website.</Text>
+          <Text style={screenStyles.label}>Private access</Text>
+          <Text style={screenStyles.sectionTitle}>Unlock your VANIR member space</Text>
+          <Text style={screenStyles.body}>Sign in to manage bookings, review your travel history, access AI Studio usage, and open support and legal tools in one place.</Text>
+          <View style={styles.contactStrip}>
+            <Text style={styles.contactChip}>{companyContent.contact.email}</Text>
+            <Text style={styles.contactChip}>{companyContent.contact.phone}</Text>
+          </View>
           <Pressable style={styles.button} onPress={() => navigation.navigate('Login')}>
             <Text style={styles.buttonText}>Sign in</Text>
           </Pressable>
@@ -52,12 +54,15 @@ export function ProfileScreen() {
   return (
     <Screen
       title="Profile"
-      subtitle="Your profile is loaded from the same authenticated backend routes used by the website."
+      subtitle="Your premium member dashboard for travel history, AI usage, support, and compliance actions."
         actions={<SupportActionStrip focus="book" />}>
       <SectionCard>
-        <Text style={screenStyles.label}>Current user</Text>
+        <Text style={screenStyles.label}>Current member</Text>
         <Text style={screenStyles.sectionTitle}>{String((user as { name?: string })?.name ?? 'VANIR traveler')}</Text>
         <Text style={screenStyles.body}>{String((user as { email?: string })?.email ?? 'No email available')}</Text>
+        <View style={styles.membershipRibbon}>
+          <Text style={styles.membershipRibbonText}>Premium traveler profile</Text>
+        </View>
       </SectionCard>
 
       <View style={styles.metricsRow}>
@@ -68,8 +73,14 @@ export function ProfileScreen() {
 
       <SectionCard>
         <Text style={screenStyles.sectionTitle}>Recent activity</Text>
-        <Text style={screenStyles.body}>Bookings: {(bookingsQuery.data ?? []).length}</Text>
-        <Text style={screenStyles.body}>Reviews: {(reviewsQuery.data ?? []).length}</Text>
+        <View style={styles.activityCard}>
+          <Text style={styles.activityTitle}>Bookings</Text>
+          <Text style={styles.activityValue}>{(bookingsQuery.data ?? []).length}</Text>
+        </View>
+        <View style={styles.activityCard}>
+          <Text style={styles.activityTitle}>Reviews</Text>
+          <Text style={styles.activityValue}>{(reviewsQuery.data ?? []).length}</Text>
+        </View>
         <Pressable style={styles.secondaryButton} onPress={signOut}>
           <Text style={styles.secondaryButtonText}>Sign out</Text>
         </Pressable>
@@ -107,6 +118,21 @@ function Metric({ label, value }: { label: string; value: string | number }) {
 }
 
 const styles = StyleSheet.create({
+  contactStrip: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+  },
+  contactChip: {
+    backgroundColor: colors.surfaceAlt,
+    color: colors.textPrimary,
+    borderRadius: 999,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    overflow: 'hidden',
+    fontSize: 12,
+    fontWeight: '600',
+  },
   metricsRow: {
     flexDirection: 'row',
     gap: 10,
@@ -130,12 +156,40 @@ const styles = StyleSheet.create({
   },
   heroImage: {
     width: '100%',
-    height: 180,
+    height: 210,
     borderRadius: 16,
-    marginTop: 8,
+  },
+  membershipRibbon: {
+    alignSelf: 'flex-start',
+    backgroundColor: colors.primary,
+    borderRadius: 999,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+  },
+  membershipRibbonText: {
+    color: colors.background,
+    fontSize: 12,
+    fontWeight: '800',
+  },
+  activityCard: {
+    backgroundColor: colors.surfaceAlt,
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: colors.border,
+    padding: 14,
+    gap: 4,
+  },
+  activityTitle: {
+    color: colors.textSecondary,
+    fontSize: 12,
+    fontWeight: '600',
+  },
+  activityValue: {
+    color: colors.textPrimary,
+    fontSize: 22,
+    fontWeight: '800',
   },
   button: {
-    marginTop: 12,
     alignItems: 'center',
     backgroundColor: colors.primary,
     borderRadius: 12,
