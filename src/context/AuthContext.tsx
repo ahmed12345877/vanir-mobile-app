@@ -1,5 +1,5 @@
 import React, { createContext, PropsWithChildren, useCallback, useContext, useEffect, useMemo, useState } from 'react';
-import auth, { FirebaseAuthTypes } from '@react-native-firebase/auth';
+import { getAuth, onAuthStateChanged, type FirebaseAuthTypes } from '@react-native-firebase/auth';
 import { useQueryClient } from '@tanstack/react-query';
 import { trpc } from '../lib/trpc';
 import {
@@ -48,16 +48,15 @@ export function AuthProvider({ children }: PropsWithChildren) {
   );
 
   useEffect(() => {
-    const unsubscribe = restoreServerSessionListener(async currentUser => {
+    const unsubscribe = restoreServerSessionListener(currentUser => {
       setFirebaseUser(currentUser);
-      try {
-        await refreshSession(currentUser);
-        setError(null);
-      } catch (sessionError) {
-        setError(sessionError instanceof Error ? sessionError.message : 'Failed to restore your session.');
-      } finally {
-        setBootstrapped(true);
-      }
+      setBootstrapped(true);
+
+      return refreshSession(currentUser)
+        .then(() => setError(null))
+        .catch(sessionError => {
+          setError(sessionError instanceof Error ? sessionError.message : 'Failed to restore your session.');
+        });
     });
 
     return unsubscribe;
@@ -98,10 +97,10 @@ export function AuthProvider({ children }: PropsWithChildren) {
 
   const value = useMemo<AuthContextValue>(
     () => ({
-      user: meQuery.data ?? null,
+        user: meQuery.data ?? firebaseUser ?? null,
       firebaseUser,
-      isAuthenticated: Boolean(meQuery.data),
-      isLoading: !bootstrapped || meQuery.isFetching || logoutMutation.isPending,
+        isAuthenticated: Boolean(meQuery.data ?? firebaseUser),
+        isLoading: !bootstrapped || logoutMutation.isPending,
       error,
       signIn,
       signUp,
@@ -127,7 +126,7 @@ export function useAuth() {
 function restoreServerSessionListener(
   onChange: (user: FirebaseAuthTypes.User | null) => Promise<void>,
 ) {
-  return auth().onAuthStateChanged(user => {
+  return onAuthStateChanged(getAuth(), user => {
     onChange(user).catch(() => undefined);
   });
 }

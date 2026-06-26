@@ -1,4 +1,12 @@
-import auth, { FirebaseAuthTypes } from '@react-native-firebase/auth';
+import {
+  GoogleAuthProvider,
+  createUserWithEmailAndPassword,
+  getAuth,
+  signInWithCredential,
+  signInWithEmailAndPassword,
+  signOut,
+  type FirebaseAuthTypes,
+} from '@react-native-firebase/auth';
 import { GoogleSignin } from '@react-native-google-signin/google-signin';
 import { appConfig, isGoogleSignInConfigured } from '../config/appConfig';
 import { postJson } from './api';
@@ -29,10 +37,10 @@ async function syncServerSession(user: FirebaseAuthTypes.User) {
 
 export const firebaseProjectConfig = appConfig.firebase;
 
-export const firebaseAuth = auth;
+export const firebaseAuth = getAuth();
 
 export async function signInWithEmail(email: string, password: string) {
-  const credential = await auth().signInWithEmailAndPassword(email.trim(), password);
+  const credential = await signInWithEmailAndPassword(firebaseAuth, email.trim(), password);
   await syncServerSession(credential.user);
   return credential.user;
 }
@@ -42,7 +50,7 @@ export async function signUpWithEmail(
   password: string,
   displayName?: string,
 ) {
-  const credential = await auth().createUserWithEmailAndPassword(email.trim(), password);
+  const credential = await createUserWithEmailAndPassword(firebaseAuth, email.trim(), password);
 
   if (displayName?.trim()) {
     await credential.user.updateProfile({ displayName: displayName.trim() });
@@ -67,8 +75,8 @@ export async function signInWithGoogle() {
     throw new Error('Google sign-in did not return an ID token.');
   }
 
-  const googleCredential = auth.GoogleAuthProvider.credential(idToken);
-  const credential = await auth().signInWithCredential(googleCredential);
+  const googleCredential = GoogleAuthProvider.credential(idToken);
+  const credential = await signInWithCredential(firebaseAuth, googleCredential);
   await syncServerSession(credential.user);
   return credential.user;
 }
@@ -79,5 +87,5 @@ export async function restoreServerSession(user: FirebaseAuthTypes.User) {
 
 export async function signOutEverywhere() {
   await GoogleSignin.signOut().catch(() => undefined);
-  await auth().signOut();
+  await signOut(firebaseAuth);
 }

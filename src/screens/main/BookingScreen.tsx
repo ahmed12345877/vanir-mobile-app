@@ -1,98 +1,90 @@
-import React, { useState } from 'react';
-import { Alert, Pressable, StyleSheet, Text, TextInput } from 'react-native';
+import React from 'react';
+import { Image, Pressable, StyleSheet, Text, View } from 'react-native';
+import { useNavigation } from '@react-navigation/native';
+import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import { SupportActionStrip } from '../../components/SupportActionStrip';
 import { Screen, SectionCard, screenStyles } from '../../components/Screen';
-import { trpc } from '../../lib/trpc';
+import { companyContent } from '../../content/companyContent';
+import type { RootStackParamList } from '../../navigation/types';
 import { colors } from '../../theme/colors';
 
+const bookingCategories = [
+  {
+    route: 'PackageBooking' as const,
+    title: 'Packages',
+    subtitle: 'Curated itineraries with stay, guides, and transfers',
+    imageUrl: companyContent.packages[0]?.imageUrl,
+  },
+  {
+    route: 'FlightBooking' as const,
+    title: 'Flights',
+    subtitle: 'Live search against the dedicated flight booking API',
+    imageUrl: companyContent.flights[0]?.imageUrl,
+  },
+  {
+    route: 'HotelBooking' as const,
+    title: 'Hotels',
+    subtitle: 'Standalone hotel availability and room booking flow',
+    imageUrl: companyContent.hotels[0]?.imageUrl,
+  },
+];
+
 export function BookingScreen() {
-  const createBooking = trpc.bookings.create.useMutation();
-  const [packageName, setPackageName] = useState('Luxury Egypt Escape');
-  const [guestName, setGuestName] = useState('');
-  const [guestEmail, setGuestEmail] = useState('');
-  const [adults, setAdults] = useState('2');
-  const [specialRequests, setSpecialRequests] = useState('');
-
-  async function submit() {
-    try {
-      const booking = await createBooking.mutateAsync({
-        packageName,
-        guestName,
-        guestEmail,
-        adults: Number(adults) || 1,
-        specialRequests,
-        paymentMethod: 'credit_card',
-        currency: 'USD',
-      });
-
-      Alert.alert('Booking created', `Confirmation code: ${(booking as { confirmationCode?: string }).confirmationCode ?? 'Pending'}`);
-      setSpecialRequests('');
-    } catch (error) {
-      Alert.alert('Booking failed', error instanceof Error ? error.message : 'Please try again.');
-    }
-  }
+  const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
 
   return (
-    <Screen title="Booking" subtitle="This screen mirrors the website’s booking mutation with a mobile-friendly form.">
+    <Screen
+      title="Booking hub"
+      subtitle="Choose the travel service you want to book. Flights and hotels now have their own independent screens and backend endpoints."
+      actions={<SupportActionStrip focus="book" />}>
       <SectionCard>
-        <Text style={screenStyles.label}>Travel package</Text>
-        <TextInput style={styles.input} value={packageName} onChangeText={setPackageName} placeholder="Package name" placeholderTextColor={colors.textMuted} />
-        <TextInput style={styles.input} value={guestName} onChangeText={setGuestName} placeholder="Guest name" placeholderTextColor={colors.textMuted} />
-        <TextInput
-          style={styles.input}
-          value={guestEmail}
-          onChangeText={setGuestEmail}
-          placeholder="Guest email"
-          keyboardType="email-address"
-          autoCapitalize="none"
-          placeholderTextColor={colors.textMuted}
-        />
-        <TextInput
-          style={styles.input}
-          value={adults}
-          onChangeText={setAdults}
-          placeholder="Adults"
-          keyboardType="number-pad"
-          placeholderTextColor={colors.textMuted}
-        />
-        <TextInput
-          style={[styles.input, styles.textArea]}
-          value={specialRequests}
-          onChangeText={setSpecialRequests}
-          placeholder="Special requests"
-          placeholderTextColor={colors.textMuted}
-          multiline
-        />
-
-        <Pressable style={styles.button} onPress={submit} disabled={createBooking.isPending}>
-          <Text style={styles.buttonText}>{createBooking.isPending ? 'Submitting…' : 'Create booking'}</Text>
-        </Pressable>
+        <Text style={screenStyles.sectionTitle}>Three dedicated booking flows</Text>
+        <Text style={screenStyles.body}>
+          Packages stay connected to the core VANIR booking mutation. Flights and hotels now search and confirm against the dedicated travel booking API layer.
+        </Text>
       </SectionCard>
+
+      <View style={styles.grid}>
+        {bookingCategories.map(category => (
+          <Pressable key={category.title} style={styles.card} onPress={() => navigation.navigate(category.route)}>
+            {category.imageUrl ? <Image source={{ uri: category.imageUrl }} style={styles.image} /> : null}
+            <View style={styles.body}>
+              <Text style={styles.title}>{category.title}</Text>
+              <Text style={styles.subtitle}>{category.subtitle}</Text>
+            </View>
+          </Pressable>
+        ))}
+      </View>
     </Screen>
   );
 }
 
 const styles = StyleSheet.create({
-  input: {
-    backgroundColor: colors.surfaceAlt,
+  grid: {
+    gap: 14,
+  },
+  card: {
+    borderRadius: 20,
+    overflow: 'hidden',
+    backgroundColor: colors.surface,
     borderWidth: 1,
     borderColor: colors.border,
-    borderRadius: 12,
+  },
+  image: {
+    width: '100%',
+    height: 210,
+  },
+  body: {
+    padding: 16,
+    gap: 8,
+  },
+  title: {
     color: colors.textPrimary,
-    paddingHorizontal: 14,
-    paddingVertical: 12,
-  },
-  textArea: {
-    minHeight: 100,
-    textAlignVertical: 'top',
-  },
-  button: {
-    alignItems: 'center',
-    backgroundColor: colors.primary,
-    borderRadius: 12,
-    paddingVertical: 14,
-  },
-  buttonText: {
-    color: colors.background,
+    fontSize: 20,
     fontWeight: '700',
+  },
+  subtitle: {
+    color: colors.textSecondary,
+    lineHeight: 22,
   },
 });

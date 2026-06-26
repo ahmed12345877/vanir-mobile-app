@@ -1,21 +1,25 @@
-import React, { PropsWithChildren } from 'react';
+import React, { PropsWithChildren, ReactNode } from 'react';
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { VanirLogo } from './VanirLogo';
 import { colors } from '../theme/colors';
 
 type ScreenProps = PropsWithChildren<{
   title: string;
   subtitle?: string;
+  actions?: ReactNode;
 }>;
 
-export function Screen({ children, title, subtitle }: ScreenProps) {
+export function Screen({ children, title, subtitle, actions }: ScreenProps) {
   return (
     <SafeAreaView style={styles.safeArea} edges={['left', 'right']}>
       <ScrollView contentContainerStyle={styles.content}>
         <View style={styles.header}>
+          <VanirLogo />
           <Text style={styles.title}>{title}</Text>
           {subtitle ? <Text style={styles.subtitle}>{subtitle}</Text> : null}
         </View>
+        {actions ? <View style={styles.actions}>{actions}</View> : null}
         {children}
       </ScrollView>
     </SafeAreaView>
@@ -63,6 +67,9 @@ const styles = StyleSheet.create({
   },
   header: {
     gap: 6,
+  },
+  actions: {
+    marginTop: -2,
   },
   title: {
     color: colors.textPrimary,

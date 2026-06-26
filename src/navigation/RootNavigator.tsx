@@ -2,32 +2,49 @@ import React from 'react';
 import { ActivityIndicator, Text, View } from 'react-native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
+import { IconBadge } from '../components/IconBadge';
 import { useAuth } from '../context/AuthContext';
 import { colors } from '../theme/colors';
 import type { MainTabParamList, RootStackParamList } from './types';
 import { BlogScreen } from '../screens/main/BlogScreen';
 import { BlogPostScreen } from '../screens/main/BlogPostScreen';
 import { BookingScreen } from '../screens/main/BookingScreen';
+import { ContactScreen } from '../screens/main/ContactScreen';
+import { FlightBookingScreen } from '../screens/main/FlightBookingScreen';
 import { GalleryScreen } from '../screens/main/GalleryScreen';
+import { HotelBookingScreen } from '../screens/main/HotelBookingScreen';
 import { HomeScreen } from '../screens/main/HomeScreen';
 import { LoginScreen } from '../screens/auth/LoginScreen';
 import { OffersScreen } from '../screens/main/OffersScreen';
+import { PackageBookingScreen } from '../screens/main/PackageBookingScreen';
 import { ProfileScreen } from '../screens/main/ProfileScreen';
 import { ReviewsScreen } from '../screens/main/ReviewsScreen';
+import { TravelEssentialsScreen } from '../screens/main/TravelEssentialsScreen';
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
 const Tab = createBottomTabNavigator<MainTabParamList>();
 
+const tabIcons: Record<keyof MainTabParamList, string> = {
+  Home: 'Home',
+  Gallery: 'Gallery',
+  Offers: 'Offers',
+  Blog: 'Blog',
+  Profile: 'Profile',
+};
+
 function MainTabs() {
   return (
     <Tab.Navigator
-      screenOptions={{
+      screenOptions={({ route }) => ({
         headerStyle: { backgroundColor: colors.surface },
         headerTintColor: colors.textPrimary,
         tabBarStyle: { backgroundColor: colors.surface, borderTopColor: colors.border },
         tabBarActiveTintColor: colors.primary,
         tabBarInactiveTintColor: colors.textMuted,
-      }}>
+        tabBarIcon: ({ color, size }) => (
+          <IconBadge name={tabIcons[route.name] as keyof typeof tabIcons} size={(size ?? 22) - 4} active={color === colors.primary} />
+        ),
+      })}>
       <Tab.Screen name="Home" component={HomeScreen} />
       <Tab.Screen name="Gallery" component={GalleryScreen} />
       <Tab.Screen name="Offers" component={OffersScreen} />
@@ -58,7 +75,12 @@ export function RootNavigator() {
       }}>
       <Stack.Screen name="MainTabs" component={MainTabs} options={{ headerShown: false }} />
       <Stack.Screen name="Login" component={LoginScreen} options={{ title: 'Login' }} />
-      <Stack.Screen name="Booking" component={BookingScreen} options={{ title: 'Book your trip' }} />
+      <Stack.Screen name="Booking" component={BookingScreen} options={{ title: 'Booking hub' }} />
+      <Stack.Screen name="PackageBooking" component={PackageBookingScreen} options={{ title: 'Packages' }} />
+      <Stack.Screen name="FlightBooking" component={FlightBookingScreen} options={{ title: 'Flights' }} />
+      <Stack.Screen name="HotelBooking" component={HotelBookingScreen} options={{ title: 'Hotels' }} />
+      <Stack.Screen name="TravelEssentials" component={TravelEssentialsScreen} options={{ title: 'Travel essentials' }} />
+      <Stack.Screen name="Contact" component={ContactScreen} options={{ title: 'Travel desk' }} />
       <Stack.Screen name="Reviews" component={ReviewsScreen} options={{ title: 'Traveler reviews' }} />
       <Stack.Screen
         name="BlogPost"

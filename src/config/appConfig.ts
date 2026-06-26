@@ -1,7 +1,7 @@
 import { Platform } from 'react-native';
 
 const developmentApiUrl = Platform.select({
-  android: 'http://10.0.2.2:3000',
+  android: 'http://localhost:3000',
   ios: 'http://localhost:3000',
   default: 'http://localhost:3000',
 });
@@ -10,6 +10,8 @@ const googleWebClientId: string =
 
 export const appConfig = {
   apiBaseUrl: __DEV__ ? developmentApiUrl ?? 'http://localhost:3000' : 'https://vanirgroup.com',
+  travelApiBaseUrl: __DEV__ ? 'http://localhost:3001' : 'https://vanirgroup.com',
+  companyWebsiteUrl: 'https://vanirgroup.com',
   firebase: {
     apiKey: 'AIzaSyAszyNw2a7_bv02cf0FBXiPXwt3E2-CXdY',
     authDomain: 'gen-lang-client-0364375301.firebaseapp.com',

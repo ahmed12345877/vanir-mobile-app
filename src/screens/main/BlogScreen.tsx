@@ -2,7 +2,9 @@ import React, { useMemo, useState } from 'react';
 import { FlatList, Pressable, StyleSheet, Text, TextInput } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import { SupportActionStrip } from '../../components/SupportActionStrip';
 import { Screen, SectionCard, screenStyles } from '../../components/Screen';
+import { companyContent } from '../../content/companyContent';
 import { trpc } from '../../lib/trpc';
 import type { RootStackParamList } from '../../navigation/types';
 import { colors } from '../../theme/colors';
@@ -21,7 +23,19 @@ export function BlogScreen() {
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const [searchTerm, setSearchTerm] = useState('');
   const postsQuery = trpc.blog.list.useQuery({ limit: 20 });
-  const posts = useMemo(() => ((postsQuery.data ?? []) as BlogPost[]), [postsQuery.data]);
+  const websitePosts = useMemo(
+    () =>
+      companyContent.articles.map(article => ({
+        slug: article.slug,
+        title: article.title,
+        excerpt: article.excerpt,
+        category: 'Travel guide',
+        publishedAt: article.publishedAt,
+        readingTime: Number(article.readingTime.replace(/\D/g, '')) || 4,
+      } satisfies BlogPost)),
+    [],
+  );
+  const posts = useMemo(() => [...websitePosts, ...((postsQuery.data ?? []) as BlogPost[])], [postsQuery.data, websitePosts]);
 
   const filteredPosts = useMemo(
     () =>
@@ -40,7 +54,16 @@ export function BlogScreen() {
   );
 
   return (
-    <Screen title="Blog" subtitle="Mobile articles are wired to the same published blog feed that powers the website.">
+    <Screen
+      title="Blog"
+      subtitle="Mobile articles are wired to the same published blog feed that powers the website."
+      actions={<SupportActionStrip focus="contact" />}>
+      <SectionCard>
+        <Text style={screenStyles.sectionTitle}>Featured travel reading</Text>
+        <Text style={screenStyles.body}>
+          Search by destination, seasonal tip, or travel guide. Every post remains readable inside the app and can lead directly to booking.
+        </Text>
+      </SectionCard>
       <TextInput
         placeholder="Search travel articles"
         placeholderTextColor={colors.textMuted}

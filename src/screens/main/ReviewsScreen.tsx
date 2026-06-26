@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
-import { Alert, FlatList, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Alert, FlatList, Image, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import { SupportActionStrip } from '../../components/SupportActionStrip';
 import { Screen, SectionCard, screenStyles } from '../../components/Screen';
+import { companyContent } from '../../content/companyContent';
 import { trpc } from '../../lib/trpc';
 import { colors } from '../../theme/colors';
 
@@ -45,13 +47,38 @@ export function ReviewsScreen() {
   }
 
   return (
-    <Screen title="Reviews" subtitle="Approved testimonials and review creation are wired to the same review router used on web.">
+    <Screen
+      title="Reviews"
+      subtitle="Approved testimonials and review creation are wired to the same review router used on web."
+      actions={<SupportActionStrip focus="contact" />}>
       <SectionCard>
         <Text style={screenStyles.sectionTitle}>Platform review stats</Text>
         <View style={styles.statsRow}>
           <Stat label="Average rating" value={stats.averageRating?.toFixed?.(1) ?? '—'} />
           <Stat label="Approved reviews" value={stats.totalReviews ?? '—'} />
         </View>
+      </SectionCard>
+
+      <SectionCard>
+        <Text style={screenStyles.sectionTitle}>What our clients say</Text>
+        <Text style={screenStyles.body}>Real traveler stories, pinned inside the app, help users compare expectations before they book.</Text>
+        <FlatList
+          data={companyContent.testimonials}
+          keyExtractor={item => item.name}
+          scrollEnabled={false}
+          contentContainerStyle={styles.testimonialList}
+          renderItem={({ item }) => (
+            <View style={styles.testimonialCard}>
+              <Image source={{ uri: item.avatarUrl }} style={styles.avatar} />
+              <View style={styles.testimonialBody}>
+                <Text style={styles.clientName}>{item.name}</Text>
+                <Text style={screenStyles.label}>{item.role}</Text>
+                <Text style={screenStyles.body}>{item.quote}</Text>
+                <Text style={styles.clientMeta}>{item.location}</Text>
+              </View>
+            </View>
+          )}
+        />
       </SectionCard>
 
       <SectionCard>
@@ -143,6 +170,34 @@ const styles = StyleSheet.create({
   },
   list: {
     gap: 12,
+  },
+  testimonialList: {
+    gap: 12,
+  },
+  testimonialCard: {
+    flexDirection: 'row',
+    gap: 12,
+    backgroundColor: colors.surfaceAlt,
+    borderRadius: 16,
+    padding: 14,
+  },
+  avatar: {
+    width: 52,
+    height: 52,
+    borderRadius: 26,
+  },
+  testimonialBody: {
+    flex: 1,
+    gap: 4,
+  },
+  clientName: {
+    color: colors.textPrimary,
+    fontSize: 16,
+    fontWeight: '700',
+  },
+  clientMeta: {
+    color: colors.textMuted,
+    fontSize: 12,
   },
   replyText: {
     color: colors.primarySoft,

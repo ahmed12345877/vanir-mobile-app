@@ -1,8 +1,10 @@
 import React from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Image, Pressable, StyleSheet, Text, View } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import { SupportActionStrip } from '../../components/SupportActionStrip';
 import { Screen, SectionCard, screenStyles } from '../../components/Screen';
+import { companyContent } from '../../content/companyContent';
 import { useAuth } from '../../context/AuthContext';
 import { trpc } from '../../lib/trpc';
 import type { RootStackParamList } from '../../navigation/types';
@@ -24,8 +26,16 @@ export function ProfileScreen() {
 
   if (!isAuthenticated) {
     return (
-      <Screen title="Profile" subtitle="Sign in to reuse the current VANIR account, bookings, reviews, and customer history.">
+      <Screen
+        title="Profile"
+        subtitle="Sign in to reuse the current VANIR account, bookings, reviews, and customer history."
+        actions={<SupportActionStrip focus="contact" />}>
         <SectionCard>
+          <Text style={screenStyles.sectionTitle}>Contact the VANIR travel desk</Text>
+          <Text style={screenStyles.body}>{companyContent.contact.address}</Text>
+          <Text style={screenStyles.body}>{companyContent.contact.email}</Text>
+          <Text style={screenStyles.body}>{companyContent.contact.phone}</Text>
+          <Image source={{ uri: companyContent.articles[0].imageUrl }} style={styles.heroImage} />
           <Text style={screenStyles.body}>This screen mirrors the protected profile routes from the website.</Text>
           <Pressable style={styles.button} onPress={() => navigation.navigate('Login')}>
             <Text style={styles.buttonText}>Sign in</Text>
@@ -36,7 +46,10 @@ export function ProfileScreen() {
   }
 
   return (
-    <Screen title="Profile" subtitle="Your profile is loaded from the same authenticated backend routes used by the website.">
+    <Screen
+      title="Profile"
+      subtitle="Your profile is loaded from the same authenticated backend routes used by the website."
+        actions={<SupportActionStrip focus="book" />}>
       <SectionCard>
         <Text style={screenStyles.label}>Current user</Text>
         <Text style={screenStyles.sectionTitle}>{String((user as { name?: string })?.name ?? 'VANIR traveler')}</Text>
@@ -91,6 +104,12 @@ const styles = StyleSheet.create({
   metricLabel: {
     color: colors.textSecondary,
     fontSize: 12,
+  },
+  heroImage: {
+    width: '100%',
+    height: 180,
+    borderRadius: 16,
+    marginTop: 8,
   },
   button: {
     marginTop: 12,

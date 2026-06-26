@@ -101,10 +101,10 @@ java -version
 Default macOS SDK path is:
 
 ```text
-/Users/zaad_1/Library/Android/sdk
+$HOME/Library/Android/sdk
 ```
 
-Project local SDK config is set in `android/local.properties`:
+Project local SDK config is set in `android/local.properties`, which is local to each machine and should not be shared verbatim:
 
 ```properties
 sdk.dir=/Users/<your-username>/Library/Android/sdk
@@ -152,12 +152,36 @@ cd android
 ./gradlew assembleDebug --stacktrace
 ```
 
+## Local Travel Booking API
+
+Flights and hotels now use a dedicated local travel booking backend on port `3001` during development.
+
+Start it in a separate terminal:
+
+```bash
+npm run travel-api
+```
+
+If you are testing on a physical Android device, forward the port as well:
+
+```bash
+adb reverse tcp:3001 tcp:3001
+```
+
+Available development endpoints:
+
+- `POST /api/mobile/flights/search`
+- `POST /api/mobile/flights/book`
+- `POST /api/mobile/hotels/search`
+- `POST /api/mobile/hotels/book`
+- `GET /health`
 ## API base URL
 
 Development defaults are defined in `src/config/appConfig.ts`:
 
 - Android emulator: `http://10.0.2.2:3000`
 - iOS simulator: `http://localhost:3000`
+- Travel booking API: `http://localhost:3001`
 - Production: `https://vanirgroup.com`
 
 Update these values if your backend is hosted elsewhere.
