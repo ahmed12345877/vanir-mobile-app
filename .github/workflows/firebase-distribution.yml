@@ -8,6 +8,9 @@ on:
         required: false
         default: "Automated build from GitHub Actions"
 
+permissions:
+  contents: read
+
 jobs:
   distribute-android:
     runs-on: ubuntu-latest
