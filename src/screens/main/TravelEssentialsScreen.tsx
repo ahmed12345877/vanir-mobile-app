@@ -1,9 +1,16 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { Alert, Image, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import DocumentPicker, { isCancel, types } from 'react-native-document-picker';
 import { SupportActionStrip } from '../../components/SupportActionStrip';
 import { Screen, SectionCard, screenStyles } from '../../components/Screen';
 import { companyContent } from '../../content/companyContent';
-import { checkoutTravelEssentials, getTravelEssentials, type TravelEssentialCategory, type TravelEssentialItem } from '../../services/travelBooking';
+import {
+  checkoutTravelEssentials,
+  getTravelEssentials,
+  uploadVisaDocument,
+  type TravelEssentialCategory,
+  type TravelEssentialItem,
+} from '../../services/travelBooking';
 import { colors } from '../../theme/colors';
 
 const categories: Array<TravelEssentialCategory | 'All'> = ['All', 'Visa', 'eSIM', 'Insurance'];
@@ -19,7 +26,9 @@ export function TravelEssentialsScreen() {
   const [countryOfResidence, setCountryOfResidence] = useState('');
   const [passportNumber, setPassportNumber] = useState('');
   const [passportExpiry, setPassportExpiry] = useState('');
-  const [documentReferences, setDocumentReferences] = useState('');
+  const [visaSelectedFiles, setVisaSelectedFiles] = useState<Array<{ uri: string; name: string; type: string | null }>>([]);
+  const [visaUploadedFiles, setVisaUploadedFiles] = useState<Array<{ fileId: string; fileName: string; fileSize: number }>>([]);
+  const [isUploadingVisaFiles, setIsUploadingVisaFiles] = useState(false);
   const [phoneNumber, setPhoneNumber] = useState('');
   const [activationDevice, setActivationDevice] = useState('iPhone / Android');
   const [destination, setDestination] = useState('Egypt');
@@ -74,7 +83,6 @@ export function TravelEssentialsScreen() {
       setCountryOfResidence('');
       setPassportNumber('');
       setPassportExpiry('');
-      setDocumentReferences('');
       setDestination('Egypt');
     }
     if (category === 'Insurance') {
@@ -91,6 +99,11 @@ export function TravelEssentialsScreen() {
 
     try {
       setIsCheckingOut(true);
+
+      if (selectedItem.category === 'Visa' && visaUploadedFiles.length === 0) {
+        throw new Error('Upload at least one visa document before checkout.');
+      }
+
       const response = await checkoutTravelEssentials({
         category: selectedItem.category,
         itemId: selectedItem.id,
@@ -99,7 +112,7 @@ export function TravelEssentialsScreen() {
         countryOfResidence,
         passportNumber,
         passportExpiry,
-        documentReferences,
+        uploadedDocumentIds: visaUploadedFiles.map(file => file.fileId),
         phoneNumber,
         activationDevice,
         destination,
@@ -121,6 +134,51 @@ export function TravelEssentialsScreen() {
       Alert.alert('Checkout failed', error instanceof Error ? error.message : 'Please try again.');
     } finally {
       setIsCheckingOut(false);
+    }
+  }
+
+  async function handlePickVisaFiles() {
+    try {
+      const picked = await DocumentPicker.pick({
+        type: [types.images, types.pdf],
+        allowMultiSelection: true,
+      });
+
+      const normalized = picked.map(file => ({
+        uri: file.uri,
+        name: file.name ?? 'visa-document',
+        type: file.type ?? null,
+      }));
+
+      setVisaSelectedFiles(current => [...current, ...normalized]);
+    } catch (error) {
+      if (isCancel(error)) {
+        return;
+      }
+      Alert.alert('Document picker error', error instanceof Error ? error.message : 'Unable to pick files.');
+    }
+  }
+
+  async function handleUploadVisaFiles() {
+    if (visaSelectedFiles.length === 0) {
+      Alert.alert('No files selected', 'Pick visa files first.');
+      return;
+    }
+
+    try {
+      setIsUploadingVisaFiles(true);
+      const uploads: Array<{ fileId: string; fileName: string; fileSize: number }> = [];
+      for (const file of visaSelectedFiles) {
+        const response = await uploadVisaDocument(file);
+        uploads.push({ fileId: response.fileId, fileName: response.fileName, fileSize: response.fileSize });
+      }
+      setVisaUploadedFiles(current => [...current, ...uploads]);
+      setVisaSelectedFiles([]);
+      Alert.alert('Upload complete', `${uploads.length} visa file(s) uploaded.`);
+    } catch (error) {
+      Alert.alert('Upload failed', error instanceof Error ? error.message : 'Please try again.');
+    } finally {
+      setIsUploadingVisaFiles(false);
     }
   }
 
@@ -178,7 +236,36 @@ export function TravelEssentialsScreen() {
               <TextInput style={styles.input} value={countryOfResidence} onChangeText={setCountryOfResidence} placeholder="Country of residence" placeholderTextColor={colors.textMuted} />
               <TextInput style={styles.input} value={passportNumber} onChangeText={setPassportNumber} placeholder="Passport number" placeholderTextColor={colors.textMuted} />
               <TextInput style={styles.input} value={passportExpiry} onChangeText={setPassportExpiry} placeholder="Passport expiry date" placeholderTextColor={colors.textMuted} />
-              <TextInput style={[styles.input, styles.textArea]} value={documentReferences} onChangeText={setDocumentReferences} placeholder="Document upload references or file links" placeholderTextColor={colors.textMuted} multiline />
+
+              <View style={styles.uploadCard}>
+                <Text style={styles.uploadTitle}>Visa documents</Text>
+                <Text style={styles.uploadSubtitle}>Select passport scans or supporting PDFs, then upload them before checkout.</Text>
+
+                <View style={styles.uploadActionsRow}>
+                  <Pressable style={[styles.secondaryButton, styles.flexButton]} onPress={handlePickVisaFiles}>
+                    <Text style={styles.secondaryButtonText}>Pick files</Text>
+                  </Pressable>
+                  <Pressable style={[styles.secondaryButton, styles.flexButton]} onPress={handleUploadVisaFiles} disabled={isUploadingVisaFiles}>
+                    <Text style={styles.secondaryButtonText}>{isUploadingVisaFiles ? 'Uploading...' : 'Upload files'}</Text>
+                  </Pressable>
+                </View>
+
+                {visaSelectedFiles.length > 0 ? (
+                  <View style={styles.fileList}>
+                    {visaSelectedFiles.map(file => (
+                      <Text key={`${file.uri}-${file.name}`} style={styles.fileLine}>Pending: {file.name}</Text>
+                    ))}
+                  </View>
+                ) : null}
+
+                {visaUploadedFiles.length > 0 ? (
+                  <View style={styles.fileList}>
+                    {visaUploadedFiles.map(file => (
+                      <Text key={file.fileId} style={styles.fileLine}>Uploaded: {file.fileName} ({Math.max(1, Math.round(file.fileSize / 1024))} KB)</Text>
+                    ))}
+                  </View>
+                ) : null}
+              </View>
             </>
           ) : null}
 
@@ -243,6 +330,15 @@ const styles = StyleSheet.create({
   textArea: { minHeight: 100, textAlignVertical: 'top' },
   button: { alignItems: 'center', backgroundColor: colors.primary, borderRadius: 12, paddingVertical: 14 },
   buttonText: { color: colors.background, fontWeight: '700' },
+  uploadCard: { backgroundColor: colors.surfaceAlt, borderWidth: 1, borderColor: colors.border, borderRadius: 12, padding: 12, gap: 10 },
+  uploadTitle: { color: colors.textPrimary, fontWeight: '700' },
+  uploadSubtitle: { color: colors.textSecondary, fontSize: 12, lineHeight: 18 },
+  uploadActionsRow: { flexDirection: 'row', gap: 10 },
+  flexButton: { flex: 1 },
+  secondaryButton: { alignItems: 'center', borderWidth: 1, borderColor: colors.border, borderRadius: 10, paddingVertical: 10, backgroundColor: colors.background },
+  secondaryButtonText: { color: colors.textPrimary, fontWeight: '600' },
+  fileList: { gap: 6 },
+  fileLine: { color: colors.textSecondary, fontSize: 12 },
   highlightsRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
   highlightChip: { borderRadius: 999, backgroundColor: colors.surfaceAlt, borderWidth: 1, borderColor: colors.border, paddingHorizontal: 12, paddingVertical: 8 },
   highlightText: { color: colors.textSecondary, fontSize: 12 },

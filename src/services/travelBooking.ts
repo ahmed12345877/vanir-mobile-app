@@ -67,7 +67,7 @@ export type TravelEssentialsCheckoutRequest = {
   countryOfResidence?: string;
   passportNumber?: string;
   passportExpiry?: string;
-  documentReferences?: string;
+  uploadedDocumentIds?: string[];
   phoneNumber?: string;
   activationDevice?: string;
   destination?: string;
@@ -94,6 +94,12 @@ export type TravelBookingRequest = {
 type SearchFlightsResponse = { offers: FlightOffer[] };
 type SearchHotelsResponse = { offers: HotelOffer[] };
 type TravelEssentialsResponse = { items: TravelEssentialItem[] };
+type VisaDocumentUploadResponse = {
+  fileId: string;
+  fileName: string;
+  fileSize: number;
+  status: string;
+};
 type TravelEssentialsCheckoutResponse = {
   confirmationCode: string;
   status: string;
@@ -102,6 +108,12 @@ type TravelEssentialsCheckoutResponse = {
   visaCaseNumber?: string;
 };
 type BookingResponse = { confirmationCode: string; status: string };
+
+export type UploadableVisaDocument = {
+  uri: string;
+  name?: string | null;
+  type?: string | null;
+};
 
 function travelApiUrl(path: string) {
   const normalizedBase = appConfig.travelApiBaseUrl.replace(/\/$/, '');
@@ -140,6 +152,28 @@ export async function searchHotels(input: HotelSearchInput) {
 export async function getTravelEssentials(category?: TravelEssentialCategory) {
   const response = await postTravelJson<TravelEssentialsResponse>('/api/mobile/travel-essentials/list', { category });
   return response.items;
+}
+
+export async function uploadVisaDocument(document: UploadableVisaDocument) {
+  const form = new FormData();
+  form.append('file', {
+    uri: document.uri,
+    name: document.name || 'visa-document',
+    type: document.type || 'application/octet-stream',
+  } as unknown as Blob);
+
+  const response = await fetch(travelApiUrl('/api/mobile/travel-essentials/visa/upload'), {
+    method: 'POST',
+    body: form,
+  });
+
+  const payload = (await response.json().catch(() => ({}))) as VisaDocumentUploadResponse & { error?: string };
+
+  if (!response.ok) {
+    throw new Error(payload.error ?? 'Visa document upload failed.');
+  }
+
+  return payload;
 }
 
 export async function checkoutTravelEssentials(request: TravelEssentialsCheckoutRequest) {

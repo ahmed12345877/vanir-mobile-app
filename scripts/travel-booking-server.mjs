@@ -105,6 +105,16 @@ const travelEssentials = [
     highlights: ['Instant QR activation', '10GB data plan', 'Regional roaming ready'],
   },
   {
+    id: 'esim-unlimited-premium',
+    category: 'eSIM',
+    title: 'Premium eSIM Unlimited Plus',
+    provider: 'VANIR Connectivity Desk',
+    price: '$52',
+    imageUrl: 'https://images.unsplash.com/photo-1498050108023-c5249f4df085?w=1200&h=800&fit=crop',
+    summary: 'Unlimited data plan with priority network profile and concierge support for longer stays.',
+    highlights: ['Unlimited data', 'Priority routing profile', '24/7 activation support'],
+  },
+  {
     id: 'insurance-premium-multi',
     category: 'Insurance',
     title: 'Premium Multi-Trip Insurance',
@@ -113,6 +123,16 @@ const travelEssentials = [
     imageUrl: 'https://images.unsplash.com/photo-1521791136064-7986c2920216?w=1200&h=800&fit=crop',
     summary: 'Medical cover, baggage delay protection, and cancellation support for high-value itineraries.',
     highlights: ['Emergency medical cover', 'Trip cancellation', 'Baggage delay protection'],
+  },
+  {
+    id: 'insurance-vip-complete',
+    category: 'Insurance',
+    title: 'VIP Complete Travel Protection',
+    provider: 'VANIR Shield Partners',
+    price: '$164 / policy',
+    imageUrl: 'https://images.unsplash.com/photo-1554224155-6726b3ff858f?w=1200&h=800&fit=crop',
+    summary: 'Extended medical, missed-connection cover, and dedicated assistance hotlines in your destination.',
+    highlights: ['Higher emergency limits', 'Missed connection cover', 'Priority claim support'],
   },
 ];
 
@@ -138,6 +158,12 @@ function normalizeCategory(value) {
   return normalize(value);
 }
 
+function parseUploadedFilename(buffer) {
+  const head = buffer.toString('utf8', 0, Math.min(buffer.length, 25000));
+  const match = head.match(/filename="([^"]+)"/i);
+  return match?.[1] || 'visa-document';
+}
+
 const server = http.createServer(async (request, response) => {
   if (request.method === 'OPTIONS') {
     sendJson(response, 200, { ok: true });
@@ -154,12 +180,40 @@ const server = http.createServer(async (request, response) => {
     return;
   }
 
+  if (request.url === '/api/mobile/travel-essentials/visa/upload') {
+    const chunks = [];
+    for await (const chunk of request) {
+      chunks.push(Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk));
+    }
+
+    const buffer = Buffer.concat(chunks);
+    if (!buffer.length) {
+      sendJson(response, 400, { error: 'No file uploaded.' });
+      return;
+    }
+
+    const fileName = parseUploadedFilename(buffer);
+    sendJson(response, 200, {
+      fileId: confirmation('DOC'),
+      fileName,
+      fileSize: buffer.length,
+      status: 'uploaded',
+    });
+    return;
+  }
+
   let rawBody = '';
   for await (const chunk of request) {
     rawBody += chunk;
   }
 
-  const body = rawBody ? JSON.parse(rawBody) : {};
+  let body = {};
+  try {
+    body = rawBody ? JSON.parse(rawBody) : {};
+  } catch {
+    sendJson(response, 400, { error: 'Invalid JSON body.' });
+    return;
+  }
 
   if (request.url === '/api/mobile/flights/search') {
     const origin = normalize(body.origin);

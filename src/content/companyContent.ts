@@ -123,6 +123,16 @@ export const companyContent = {
       description: 'Google Sign-In is used only to verify identity. Your account and session remain protected.',
       icon: 'imageOff',
     },
+    {
+      title: 'Airport Transfer Concierge',
+      description: 'Pre-book private airport pickup with flight tracking and direct transfer to your hotel or cruise.',
+      icon: 'booking',
+    },
+    {
+      title: 'VIP Lounge & Meet Assist',
+      description: 'Add lounge access and fast-track airport assistance as a premium travel add-on from the app.',
+      icon: 'reviews',
+    },
   ] satisfies CompanyService[],
   destinations: [
     {
@@ -301,6 +311,16 @@ export const companyContent = {
       highlights: ['Instant QR activation', '10GB data plan', 'Regional roaming ready'],
     },
     {
+      id: 'esim-unlimited-premium',
+      category: 'eSIM',
+      title: 'Premium eSIM Unlimited Plus',
+      provider: 'VANIR Connectivity Desk',
+      price: '$52',
+      imageUrl: 'https://images.unsplash.com/photo-1498050108023-c5249f4df085?w=1200&h=800&fit=crop',
+      summary: 'Unlimited data plan with priority network profile and concierge support for longer stays.',
+      highlights: ['Unlimited data', 'Priority routing profile', '24/7 activation support'],
+    },
+    {
       id: 'insurance-premium-multi',
       category: 'Insurance',
       title: 'Premium Multi-Trip Insurance',
@@ -309,6 +329,16 @@ export const companyContent = {
       imageUrl: 'https://images.unsplash.com/photo-1521791136064-7986c2920216?w=1200&h=800&fit=crop',
       summary: 'Medical cover, baggage delay protection, and cancellation support for high-value itineraries.',
       highlights: ['Emergency medical cover', 'Trip cancellation', 'Baggage delay protection'],
+    },
+    {
+      id: 'insurance-vip-complete',
+      category: 'Insurance',
+      title: 'VIP Complete Travel Protection',
+      provider: 'VANIR Shield Partners',
+      price: '$164 / policy',
+      imageUrl: 'https://images.unsplash.com/photo-1554224155-6726b3ff858f?w=1200&h=800&fit=crop',
+      summary: 'Extended medical, missed-connection cover, and dedicated assistance hotlines in your destination.',
+      highlights: ['Higher emergency limits', 'Missed connection cover', 'Priority claim support'],
     },
   ] satisfies readonly TravelEssentialItem[],
   testimonials: [
