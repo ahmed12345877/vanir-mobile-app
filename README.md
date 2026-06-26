@@ -185,3 +185,11 @@ Development defaults are defined in `src/config/appConfig.ts`:
 - Production: `https://vanirgroup.com`
 
 Update these values if your backend is hosted elsewhere.
+
+## Legal and Google Play readiness
+
+- Privacy policy draft: `PRIVACY_POLICY.md`
+- Terms of service draft: `TERMS_OF_SERVICE.md`
+- Play release checklist: `docs/GOOGLE_PLAY_RELEASE_CHECKLIST.md`
+
+These files are included to speed up Play Console compliance reviews and keep legal/content declarations synchronized with app behavior.

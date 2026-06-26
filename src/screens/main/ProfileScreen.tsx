@@ -1,5 +1,5 @@
 import React from 'react';
-import { Image, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Image, Linking, Pressable, StyleSheet, Text, View } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { SupportActionStrip } from '../../components/SupportActionStrip';
@@ -23,6 +23,10 @@ export function ProfileScreen() {
   const bookingsQuery = trpc.bookings.myBookings.useQuery(undefined, { enabled: isAuthenticated });
   const reviewsQuery = trpc.reviews.myReviews.useQuery(undefined, { enabled: isAuthenticated });
   const stats = (statsQuery.data ?? {}) as ProfileStats;
+
+  function openLink(url: string) {
+    Linking.openURL(url).catch(() => undefined);
+  }
 
   if (!isAuthenticated) {
     return (
@@ -69,6 +73,22 @@ export function ProfileScreen() {
         <Pressable style={styles.secondaryButton} onPress={signOut}>
           <Text style={styles.secondaryButtonText}>Sign out</Text>
         </Pressable>
+      </SectionCard>
+
+      <SectionCard>
+        <Text style={screenStyles.sectionTitle}>Legal & Play Store compliance</Text>
+        <Text style={screenStyles.body}>Review Terms of Service and Privacy Policy directly from the app. This section also provides a delete-account request path for compliance workflows.</Text>
+        <View style={styles.legalActions}>
+          <Pressable style={styles.secondaryButton} onPress={() => openLink(companyContent.contact.termsOfService)}>
+            <Text style={styles.secondaryButtonText}>Terms of Service</Text>
+          </Pressable>
+          <Pressable style={styles.secondaryButton} onPress={() => openLink(companyContent.contact.privacyPolicy)}>
+            <Text style={styles.secondaryButtonText}>Privacy Policy</Text>
+          </Pressable>
+          <Pressable style={styles.secondaryButton} onPress={() => openLink(`mailto:${companyContent.contact.email}?subject=Delete%20My%20Account`)}>
+            <Text style={styles.secondaryButtonText}>Request Account Deletion</Text>
+          </Pressable>
+        </View>
       </SectionCard>
     </Screen>
   );
@@ -133,5 +153,9 @@ const styles = StyleSheet.create({
   secondaryButtonText: {
     color: colors.textPrimary,
     fontWeight: '600',
+  },
+  legalActions: {
+    marginTop: 4,
+    gap: 6,
   },
 });
