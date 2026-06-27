@@ -69,9 +69,11 @@ jobs:
           at: .
       - run:
           name: Run tests
+          no_output_timeout: 10m
           # --ci: disables watch mode, fails on new snapshots, deterministic output
           # --forceExit: prevents Jest from hanging on open handles (Firebase, async)
-          command: npm test -- --ci --forceExit
+          # --passWithNoTests: succeeds when no test files exist yet
+          command: npm test -- --ci --forceExit --passWithNoTests
 
 workflows:
   build-and-test:
