@@ -6,6 +6,10 @@ executors:
     docker:
       - image: cimg/node:22.11
     resource_class: medium
+  android:
+    docker:
+      - image: cimg/android:2024.12.1
+    resource_class: xlarge
 
 jobs:
   # ------------------------------------------------------------------
@@ -75,6 +79,85 @@ jobs:
           # --passWithNoTests: succeeds when no test files exist yet
           command: npm test -- --ci --forceExit --passWithNoTests
 
+  # ------------------------------------------------------------------
+  # android-release: builds a signed release AAB (Android App Bundle)
+  # ready for Google Play upload. Runs only on the main branch after
+  # all quality gates pass.
+  #
+  # Required CircleCI environment variables (set in Project Settings):
+  #   ANDROID_KEYSTORE_BASE64  — base64-encoded release.keystore
+  #   ANDROID_KEY_ALIAS        — key alias (vanir-release)
+  #   ANDROID_STORE_PASSWORD   — keystore + key password (PKCS12 unified)
+  # ------------------------------------------------------------------
+  android-release:
+    executor: android
+    steps:
+      - checkout
+
+      - run:
+          name: Install Node 22.11
+          command: |
+            curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.7/install.sh | bash
+            echo 'export NVM_DIR="$HOME/.nvm"' >> $BASH_ENV
+            echo '[ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"' >> $BASH_ENV
+            source $BASH_ENV
+            nvm install 22.11.0
+            nvm alias default 22.11.0
+
+      - run:
+          name: Accept Android SDK licenses and install SDK components
+          command: |
+            yes | sdkmanager --licenses 2>/dev/null || true
+            sdkmanager \
+              "platforms;android-36" \
+              "build-tools;36.0.0" \
+              "ndk;27.1.12297006"
+
+      - restore_cache:
+          keys:
+            - gradle-v1-{{ checksum "android/build.gradle" }}-{{ checksum "android/app/build.gradle" }}
+            - gradle-v1-
+
+      - restore_cache:
+          keys:
+            - npm-v1-{{ .Branch }}-{{ checksum "package-lock.json" }}
+            - npm-v1-{{ .Branch }}-
+            - npm-v1-
+
+      - run:
+          name: Install JS dependencies
+          command: npm ci
+
+      - save_cache:
+          key: npm-v1-{{ .Branch }}-{{ checksum "package-lock.json" }}
+          paths:
+            - ~/.npm
+
+      - run:
+          name: Decode release keystore
+          command: |
+            echo "$ANDROID_KEYSTORE_BASE64" | base64 --decode > android/app/release.keystore
+
+      - run:
+          name: Build release AAB
+          no_output_timeout: 20m
+          command: |
+            cd android && ./gradlew bundleRelease \
+              -PRELEASE_STORE_FILE=release.keystore \
+              -PRELEASE_KEY_ALIAS="$ANDROID_KEY_ALIAS" \
+              -PRELEASE_STORE_PASSWORD="$ANDROID_STORE_PASSWORD" \
+              -PRELEASE_KEY_PASSWORD="$ANDROID_STORE_PASSWORD"
+
+      - save_cache:
+          key: gradle-v1-{{ checksum "android/build.gradle" }}-{{ checksum "android/app/build.gradle" }}
+          paths:
+            - ~/.gradle/caches
+            - ~/.gradle/wrapper
+
+      - store_artifacts:
+          path: android/app/build/outputs/bundle/release/app-release.aab
+          destination: app-release.aab
+
 workflows:
   build-and-test:
     jobs:
@@ -88,3 +171,11 @@ workflows:
       - test:
           requires:
             - install
+      - android-release:
+          requires:
+            - lint
+            - typecheck
+            - test
+          filters:
+            branches:
+              only: main
