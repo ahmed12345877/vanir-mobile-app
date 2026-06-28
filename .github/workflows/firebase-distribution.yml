@@ -3,48 +3,59 @@ name: Firebase App Distribution (Android)
 on:
   workflow_dispatch:
     inputs:
-      release_notes:
-        description: "Release notes for testers"
+      releaseNotes:
+        description: 'Release Notes'
         required: false
-        default: "Automated build from GitHub Actions"
+        default: 'Bug fixes and improvements'
 
 jobs:
-  distribute-android:
+  build-and-distribute:
     runs-on: ubuntu-latest
-
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+      - name: Checkout code
+        uses: actions/checkout@v3
 
-      # 👇 أضف هذا السطر هنا بعد Checkout مباشرة
-      - name: Write google-services.json
-        run: echo '${{ secrets.GOOGLE_SERVICES_JSON }}' > android/app/google-services.json
-
-      - name: Setup Node (from .nvmrc)
-        uses: actions/setup-node@v4
+      - name: Set up Node.js
+        uses: actions/setup-node@v3
         with:
-          node-version-file: '.nvmrc'
-          cache: 'npm'
+          node-version: '22.11.0'
 
-      - name: Setup Java 17
-        uses: actions/setup-java@v4
+      - name: Set up JDK 17
+        uses: actions/setup-java@v3
         with:
-          distribution: temurin
+          distribution: 'temurin'
           java-version: '17'
-          cache: gradle
 
-      - name: Install dependencies
-        run: npm ci
+      - name: Install npm dependencies
+        run: npm install
 
-      - name: Build debug APK (for distribution)
-        working-directory: android
-        run: ./gradlew assembleDebug --stacktrace
+      - name: Build Android App Bundle and APK
+        run: |
+          cd android
+          ./gradlew bundleRelease
+          ./gradlew assembleRelease
+
+      - name: Upload AAB Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: app-release.aab
+          path: android/app/build/outputs/bundle/release/app-release.aab
+
+      - name: Upload APK Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: app-release.apk
+          path: android/app/build/outputs/apk/release/app-release.apk
+
+      - name: Decode Firebase Service Account
+        run: echo "${{ secrets.FIREBASE_SERVICE_ACCOUNT_JSON }}" > service_account.json
+        env:
+          FIREBASE_SERVICE_ACCOUNT_JSON: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_JSON }}
 
       - name: Distribute to Firebase App Distribution
-        uses: wzieba/Firebase-Distribution-Github-Action@v1
+        uses: wzieba/firebase-app-distribution-action@v1
         with:
           appId: ${{ secrets.FIREBASE_APP_ID_ANDROID }}
-          serviceCredentialsFileContent: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_JSON }}
-          groups: testers
-          file: android/app/build/outputs/apk/debug/app-debug.apk
-          releaseNotes: ${{ github.event.inputs.release_notes }}
+          serviceCredentialsFile: service_account.json
+          releaseNotes: ${{ github.event.inputs.releaseNotes }}
+          file: android/app/build/outputs/apk/release/app-release.apk
