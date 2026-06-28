@@ -1,0 +1,138 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ─── CSS Custom Properties ─────────────────────────────────────────────────── */
+:root {
+  --color-bg: #080810;
+  --color-surface: #0f0f1a;
+  --color-surface-alt: #14141f;
+  --color-gold: #c9a84c;
+  --color-gold-light: #e8c97a;
+  --color-gold-border: rgba(201, 168, 76, 0.25);
+  --color-text: #f5f0e8;
+  --color-text-secondary: #a8a099;
+  --color-border: rgba(255, 255, 255, 0.06);
+}
+
+/* ─── Base reset ─────────────────────────────────────────────────────────────── */
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html,
+body {
+  height: 100%;
+  background-color: var(--color-bg);
+  color: var(--color-text);
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* ─── Scrollbar ──────────────────────────────────────────────────────────────── */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: var(--color-surface);
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(201, 168, 76, 0.3);
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(201, 168, 76, 0.5);
+}
+
+/* ─── Art Deco utility classes ───────────────────────────────────────────────── */
+@layer utilities {
+  .text-gold {
+    color: var(--color-gold);
+  }
+
+  .bg-surface {
+    background-color: var(--color-surface);
+  }
+
+  .bg-surface-alt {
+    background-color: var(--color-surface-alt);
+  }
+
+  .border-gold {
+    border-color: var(--color-gold-border);
+  }
+
+  .gold-glow {
+    box-shadow: 0 4px 24px rgba(201, 168, 76, 0.25);
+  }
+
+  .gold-glow-strong {
+    box-shadow: 0 8px 40px rgba(201, 168, 76, 0.35);
+  }
+
+  .glass-card {
+    background: rgba(15, 15, 26, 0.8);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid rgba(201, 168, 76, 0.15);
+  }
+
+  .art-deco-divider {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+  }
+
+  .art-deco-divider::before,
+  .art-deco-divider::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(201, 168, 76, 0.4), transparent);
+  }
+
+  .shimmer-bg {
+    background: linear-gradient(
+      90deg,
+      rgba(201, 168, 76, 0.05) 0%,
+      rgba(201, 168, 76, 0.12) 50%,
+      rgba(201, 168, 76, 0.05) 100%
+    );
+    background-size: 200% 100%;
+    animation: shimmer 2s linear infinite;
+  }
+}
+
+/* ─── Typography ─────────────────────────────────────────────────────────────── */
+.font-display {
+  font-family: 'Georgia', Cambria, serif;
+}
+
+/* ─── Input focus ring ───────────────────────────────────────────────────────── */
+input:focus,
+textarea:focus,
+select:focus {
+  outline: none;
+  ring: none;
+  border-color: rgba(201, 168, 76, 0.5) !important;
+  box-shadow: 0 0 0 3px rgba(201, 168, 76, 0.1);
+}
+
+/* ─── Recharts overrides ─────────────────────────────────────────────────────── */
+.recharts-cartesian-grid-horizontal line,
+.recharts-cartesian-grid-vertical line {
+  stroke: rgba(255, 255, 255, 0.05) !important;
+}
+
+.recharts-text {
+  fill: #a8a099 !important;
+  font-size: 11px !important;
+}
+
+.recharts-tooltip-wrapper {
+  outline: none !important;
+}

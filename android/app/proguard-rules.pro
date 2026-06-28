@@ -8,3 +8,19 @@
 #   http://developer.android.com/guide/developing/tools/proguard.html
 
 # Add any project specific keep options here:
+
+# ---------------------------------------------------------------------------
+# Firebase / Crashlytics — keep class names so stack traces are readable.
+# These rules are required when enableProguardInReleaseBuilds = true.
+# ---------------------------------------------------------------------------
+-keepattributes SourceFile,LineNumberTable
+-keep public class * extends java.lang.Exception
+
+# Firebase
+-keep class com.google.firebase.** { *; }
+-keep class com.google.android.gms.** { *; }
+
+# Crashlytics
+-keepattributes *Annotation*
+-keep class com.crashlytics.** { *; }
+-dontwarn com.crashlytics.**
