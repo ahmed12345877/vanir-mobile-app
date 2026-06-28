@@ -1,20 +1,41 @@
 version: 2.1
 
-# Reusable executor — Node 22.11 matches .nvmrc and engines field in package.json.
+orbs:
+  # Provides `node/install` for adding Node.js to the Android executor.
+  node: circleci/node@6.3.0
+
+# ---------------------------------------------------------------------------
+# Executors
+# ---------------------------------------------------------------------------
 executors:
   node:
     docker:
       - image: cimg/node:22.11
     resource_class: medium
 
+  android:
+    docker:
+      # cimg/android ships with Java 17, Android SDK (API 34), and Gradle.
+      # Node.js is installed separately via the node orb.
+      - image: cimg/android:2024.11.1
+    resource_class: large
+    environment:
+      JVM_OPTS: -Xmx4g
+      GRADLE_OPTS: >-
+        -Dorg.gradle.daemon=false
+        -Dorg.gradle.workers.max=2
+        -Dkotlin.incremental=false
+
+# ---------------------------------------------------------------------------
+# Jobs
+# ---------------------------------------------------------------------------
 jobs:
-  # ------------------------------------------------------------------
-  # install: single source of truth for dependency installation.
-  # Caches ~/.npm (the npm download cache) keyed on package-lock.json
-  # so network fetches are skipped on cache hits. Persists node_modules
-  # to the workspace so downstream jobs share the same install without
-  # re-running npm ci.
-  # ------------------------------------------------------------------
+  # -------------------------------------------------------------------------
+  # install — single source of truth for JS dependency installation.
+  # Caches ~/.npm keyed on package-lock.json; persists node_modules to the
+  # workspace so downstream JS jobs reuse the same install without re-running
+  # npm ci.
+  # -------------------------------------------------------------------------
   install:
     executor: node
     steps:
@@ -36,11 +57,9 @@ jobs:
           paths:
             - node_modules
 
-  # ------------------------------------------------------------------
+  # -------------------------------------------------------------------------
   # lint, typecheck, test run in parallel after install completes.
-  # Attaching the workspace provides node_modules instantly (~2s)
-  # instead of running another npm ci (~30–60s).
-  # ------------------------------------------------------------------
+  # -------------------------------------------------------------------------
   lint:
     executor: node
     steps:
@@ -73,7 +92,109 @@ jobs:
           # --forceExit: prevents Jest from hanging on open handles (Firebase, async)
           command: npm test -- --ci --forceExit
 
+  # -------------------------------------------------------------------------
+  # android-apk — compiles the React Native JS bundle and Gradle release APK.
+  #
+  # Required CircleCI environment variables (set in Project Settings → Env Vars):
+  #   GOOGLE_SERVICES_JSON      — base64-encoded or raw contents of google-services.json
+  #   RELEASE_KEYSTORE_BASE64   — base64-encoded .jks / .keystore release file
+  #   RELEASE_STORE_PASSWORD    — keystore password
+  #   RELEASE_KEY_ALIAS         — key alias inside the keystore
+  #   RELEASE_KEY_PASSWORD      — key password
+  #
+  # The built APK is uploaded as a CircleCI artifact and can be downloaded
+  # from the Artifacts tab of the build in the CircleCI web UI.
+  # -------------------------------------------------------------------------
+  android-apk:
+    executor: android
+    steps:
+      - checkout
+
+      # Install Node.js (cimg/android does not bundle it).
+      - node/install:
+          node-version: '22.11.0'
+
+      # Restore JS package cache before npm ci to skip re-downloading.
+      - restore_cache:
+          keys:
+            - npm-v1-{{ .Branch }}-{{ checksum "package-lock.json" }}
+            - npm-v1-{{ .Branch }}-
+            - npm-v1-
+
+      - run:
+          name: Install JS dependencies
+          command: npm ci
+
+      - save_cache:
+          key: npm-v1-{{ .Branch }}-{{ checksum "package-lock.json" }}
+          paths:
+            - ~/.npm
+
+      # Gradle build caching — keyed on both Gradle files so any dependency
+      # or plugin change invalidates the cache.
+      - restore_cache:
+          keys:
+            - gradle-v2-{{ checksum "android/build.gradle" }}-{{ checksum "android/app/build.gradle" }}
+            - gradle-v2-
+
+      - run:
+          name: Write google-services.json
+          # GOOGLE_SERVICES_JSON can be the raw JSON string or base64-encoded.
+          # The 'base64 -d' fallback handles both variants safely.
+          command: |
+            echo "$GOOGLE_SERVICES_JSON" > android/app/google-services.json
+
+      - run:
+          name: Decode release keystore
+          # Decode the base64-encoded release keystore stored in CI secrets and
+          # write it to the path referenced by RELEASE_STORE_FILE below.
+          command: |
+            echo "$RELEASE_KEYSTORE_BASE64" | base64 -d > android/app/vanir-release.keystore
+
+      - run:
+          name: Make Gradle wrapper executable
+          command: chmod +x android/gradlew
+
+      - run:
+          name: Build release APK
+          working_directory: android
+          # Pass release signing properties directly so they are never written
+          # to gradle.properties on disk and cannot be leaked in cache.
+          command: |
+            ./gradlew assembleRelease \
+              -PRELEASE_STORE_FILE=vanir-release.keystore \
+              -PRELEASE_STORE_PASSWORD="$RELEASE_STORE_PASSWORD" \
+              -PRELEASE_KEY_ALIAS="$RELEASE_KEY_ALIAS" \
+              -PRELEASE_KEY_PASSWORD="$RELEASE_KEY_PASSWORD" \
+              --no-daemon \
+              --stacktrace
+
+      - save_cache:
+          key: gradle-v2-{{ checksum "android/build.gradle" }}-{{ checksum "android/app/build.gradle" }}
+          paths:
+            - ~/.gradle/caches
+            - ~/.gradle/wrapper
+
+      # Upload APK so it appears on the Artifacts tab and can be downloaded
+      # without a local Android build environment.
+      - store_artifacts:
+          path: android/app/build/outputs/apk/release/app-release.apk
+          destination: vanir-group-release.apk
+
+      # Also persist the APK to the workspace so a downstream deploy job could
+      # push it to Firebase App Distribution without rebuilding.
+      - persist_to_workspace:
+          root: .
+          paths:
+            - android/app/build/outputs/apk/release/app-release.apk
+
+# ---------------------------------------------------------------------------
+# Workflows
+# ---------------------------------------------------------------------------
 workflows:
+  # --------------------------------------------------------------------------
+  # build-and-test — runs on every push and PR for JS quality gates.
+  # --------------------------------------------------------------------------
   build-and-test:
     jobs:
       - install
@@ -86,3 +207,17 @@ workflows:
       - test:
           requires:
             - install
+
+  # --------------------------------------------------------------------------
+  # android-release — builds the signed release APK.
+  # Triggered automatically on pushes to main or release/* branches, and can
+  # be triggered manually for any branch via the CircleCI UI (rerun workflow).
+  # --------------------------------------------------------------------------
+  android-release:
+    jobs:
+      - android-apk:
+          filters:
+            branches:
+              only:
+                - main
+                - /release\/.*/
