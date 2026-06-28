@@ -3,6 +3,10 @@
     <uses-permission android:name="android.permission.INTERNET" />
     <!-- Required for FCM push notifications on Android 13+ (API 33+). -->
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <!-- Required for react-native-vision-camera (AI Vision & Translate mode). -->
+    <uses-permission android:name="android.permission.CAMERA" />
+    <uses-feature android:name="android.hardware.camera" android:required="false" />
+    <uses-feature android:name="android.hardware.camera.autofocus" android:required="false" />
 
     <application
       android:name=".MainApplication"

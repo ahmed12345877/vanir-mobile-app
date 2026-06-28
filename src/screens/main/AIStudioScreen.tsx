@@ -1,4 +1,16 @@
-import React, { useRef, useState } from 'react';
+/**
+ * AIStudioScreen — VANIR AI Studio with three real AI modes:
+ *
+ *   ◈  24/7 Concierge  — streaming SSE chat (useAIStream)
+ *   ◉  Trip Planner    — streaming SSE + structured JSON → ItineraryView
+ *   ◎  Vision          — live camera capture → Vision API + result in chat
+ *
+ * All modes share a single messages list managed by useAIStream.
+ * The Planner mode detects JSON responses and swaps the ChatBubble
+ * for the premium ItineraryView timeline component.
+ */
+
+import React, { useCallback, useRef } from 'react';
 import {
   KeyboardAvoidingView,
   Platform,
@@ -12,10 +24,13 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import LinearGradient from 'react-native-linear-gradient';
 import { ChatBubble, ChatMessage, TypingBubble } from '../../components/ChatBubble';
+import { AIVisionScanner } from '../../components/AIVisionScanner';
+import { ItineraryView, tryParseItinerary } from '../../components/ItineraryView';
+import { useAIStream, AIMode } from '../../hooks/useAIStream';
 import { colors } from '../../theme/colors';
 import { borderRadius, spacing } from '../../theme/spacing';
 
-type AIMode = 'concierge' | 'planner' | 'vision';
+// ─── Config ───────────────────────────────────────────────────────────────────
 
 interface ModeConfig {
   id: AIMode;
@@ -48,83 +63,103 @@ const MODES: ModeConfig[] = [
   },
 ];
 
-const QUICK_PROMPTS = [
-  'Plan 7-day Egypt luxury trip',
-  'Book dinner at Nusr-Et Dubai',
-  'Private villa in Santorini',
-  'First-class flight to Maldives',
-];
+const QUICK_PROMPTS: Record<AIMode, string[]> = {
+  concierge: [
+    'Book dinner at Nusr-Et Dubai',
+    'Arrange a private transfer',
+    'Suite upgrade at Burj Al Arab',
+    'Private yacht for the evening',
+  ],
+  planner: [
+    'Plan 7-day Egypt luxury trip',
+    'Private villa in Santorini',
+    'First-class Japan itinerary',
+    'Maldives overwater escape',
+  ],
+  vision: [
+    'What landmark is this?',
+    'Translate this menu',
+    'Historical context please',
+    'Identify this artwork',
+  ],
+};
 
-let messageCounter = 0;
-function makeId() {
-  return String(++messageCounter);
-}
+// ─── Screen ───────────────────────────────────────────────────────────────────
 
 export function AIStudioScreen() {
-  const [activeMode, setActiveMode] = useState<AIMode>('concierge');
-  const [messages, setMessages] = useState<ChatMessage[]>([
-    {
-      id: '0',
-      role: 'assistant',
-      content: MODES[0].greeting,
-      timestamp: new Date(),
-    },
-  ]);
-  const [inputText, setInputText] = useState('');
-  const [isTyping, setIsTyping] = useState(false);
+  const [activeMode, setActiveMode] = React.useState<AIMode>('concierge');
+  const [inputText, setInputText] = React.useState('');
   const scrollRef = useRef<ScrollView>(null);
 
-  const switchMode = (mode: AIMode) => {
-    const config = MODES.find(m => m.id === mode)!;
-    setActiveMode(mode);
-    setMessages([
-      {
-        id: makeId(),
-        role: 'system',
-        content: `— Switched to ${config.label} —`,
-        timestamp: new Date(),
-      },
-      {
-        id: makeId(),
-        role: 'assistant',
-        content: config.greeting,
-        timestamp: new Date(),
-      },
-    ]);
-  };
+  const {
+    messages,
+    isTyping,
+    isStreaming,
+    sendMessage,
+    pushMessages,
+    resetMessages,
+    abort,
+  } = useAIStream({
+    mode: activeMode,
+    initialGreeting: MODES[0].greeting,
+  });
 
-  const sendMessage = async (text: string) => {
-    if (!text.trim()) return;
-    const userMsg: ChatMessage = {
-      id: makeId(),
-      role: 'user',
-      content: text.trim(),
-      timestamp: new Date(),
-    };
-    setMessages(prev => [...prev, userMsg]);
-    setInputText('');
-    setIsTyping(true);
+  const scrollToBottom = useCallback(() => {
+    setTimeout(() => scrollRef.current?.scrollToEnd({ animated: true }), 80);
+  }, []);
 
-    // Scroll to bottom
-    setTimeout(() => scrollRef.current?.scrollToEnd({ animated: true }), 100);
+  // Switch mode — abort stream, push system divider, reset to new greeting
+  const switchMode = useCallback(
+    (newMode: AIMode) => {
+      if (newMode === activeMode) return;
+      abort();
+      setActiveMode(newMode);
+      setInputText('');
+      const config = MODES.find(m => m.id === newMode)!;
+      resetMessages(config.greeting);
+    },
+    [activeMode, abort, resetMessages],
+  );
 
-    // Simulate AI response — replace with real API call
-    await simulateAIResponse(text.trim(), activeMode, (reply) => {
-      setIsTyping(false);
-      const aiMsg: ChatMessage = {
-        id: makeId(),
-        role: 'assistant',
-        content: reply,
-        timestamp: new Date(),
-      };
-      setMessages(prev => [...prev, aiMsg]);
-      setTimeout(() => scrollRef.current?.scrollToEnd({ animated: true }), 100);
-    });
+  const handleSend = useCallback(
+    async (text: string) => {
+      if (!text.trim() || isTyping || isStreaming) return;
+      setInputText('');
+      await sendMessage(text.trim());
+      scrollToBottom();
+    },
+    [isTyping, isStreaming, sendMessage, scrollToBottom],
+  );
+
+  // Vision scanner callback — pushes user "captured image" + AI result as messages
+  const handleVisionAnalysis = useCallback(
+    (userPrompt: string, aiResult: string) => {
+      pushMessages(
+        { role: 'user', content: userPrompt },
+        { role: 'assistant', content: aiResult },
+      );
+      scrollToBottom();
+    },
+    [pushMessages, scrollToBottom],
+  );
+
+  const hasUserMessages = messages.some(m => m.role === 'user');
+  const quickPrompts = QUICK_PROMPTS[activeMode];
+
+  // Render a single message — planner mode tries to parse itinerary JSON
+  const renderMessage = (m: ChatMessage) => {
+    if (activeMode === 'planner' && m.role === 'assistant') {
+      const days = tryParseItinerary(m.content);
+      if (days) {
+        return <ItineraryView key={m.id} days={days} />;
+      }
+    }
+    return <ChatBubble key={m.id} message={m} />;
   };
 
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>
-      {/* Header */}
+      {/* ── Header ───────────────────────────────────────────────────────── */}
       <LinearGradient
         colors={[colors.surface, colors.background]}
         style={styles.header}>
@@ -149,10 +184,18 @@ export function AIStudioScreen() {
               key={m.id}
               onPress={() => switchMode(m.id)}
               style={[styles.modeTab, activeMode === m.id && styles.modeTabActive]}>
-              <Text style={[styles.modeIcon, activeMode === m.id && styles.modeIconActive]}>
+              <Text
+                style={[
+                  styles.modeIcon,
+                  activeMode === m.id && styles.modeIconActive,
+                ]}>
                 {m.icon}
               </Text>
-              <Text style={[styles.modeLabel, activeMode === m.id && styles.modeLabelActive]}>
+              <Text
+                style={[
+                  styles.modeLabel,
+                  activeMode === m.id && styles.modeLabelActive,
+                ]}>
                 {m.label}
               </Text>
             </Pressable>
@@ -164,100 +207,112 @@ export function AIStudioScreen() {
         style={styles.flex}
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
         keyboardVerticalOffset={0}>
-        {/* Messages */}
-        <ScrollView
-          ref={scrollRef}
-          style={styles.flex}
-          contentContainerStyle={styles.messageList}
-          showsVerticalScrollIndicator={false}>
-          {messages.map(m => (
-            <ChatBubble key={m.id} message={m} />
-          ))}
-          {isTyping && <TypingBubble />}
-        </ScrollView>
 
-        {/* Quick prompts (show when no user messages yet) */}
-        {messages.filter(m => m.role === 'user').length === 0 && (
+        {activeMode === 'vision' ? (
+          /* ── Vision mode ─────────────────────────────────────────────── */
           <ScrollView
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            contentContainerStyle={styles.quickPromptsRow}
-            style={styles.quickPromptsScroll}>
-            {QUICK_PROMPTS.map(p => (
-              <Pressable key={p} style={styles.quickPromptChip} onPress={() => sendMessage(p)}>
-                <Text style={styles.quickPromptText}>{p}</Text>
-              </Pressable>
-            ))}
-          </ScrollView>
-        )}
+            ref={scrollRef}
+            style={styles.flex}
+            contentContainerStyle={styles.visionScroll}
+            showsVerticalScrollIndicator={false}>
 
-        {/* Input bar */}
-        <View style={styles.inputBar}>
-          <View style={styles.inputWrapper}>
-            <TextInput
-              style={styles.input}
+            {/* Live camera */}
+            <AIVisionScanner onAnalysis={handleVisionAnalysis} />
+
+            {/* Previous vision results rendered as chat below the scanner */}
+            {messages.filter(m => m.role !== 'system' || true).map(renderMessage)}
+
+            {isTyping && <TypingBubble />}
+          </ScrollView>
+        ) : (
+          /* ── Chat modes (concierge / planner) ────────────────────────── */
+          <>
+            <ScrollView
+              ref={scrollRef}
+              style={styles.flex}
+              contentContainerStyle={styles.messageList}
+              showsVerticalScrollIndicator={false}
+              onContentSizeChange={scrollToBottom}>
+              {messages.map(renderMessage)}
+              {isTyping && <TypingBubble />}
+            </ScrollView>
+
+            {/* Quick prompts — shown until the user sends their first message */}
+            {!hasUserMessages && (
+              <ScrollView
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                contentContainerStyle={styles.quickPromptsRow}
+                style={styles.quickPromptsScroll}>
+                {quickPrompts.map(p => (
+                  <Pressable
+                    key={p}
+                    style={styles.quickPromptChip}
+                    onPress={() => handleSend(p)}>
+                    <Text style={styles.quickPromptText}>{p}</Text>
+                  </Pressable>
+                ))}
+              </ScrollView>
+            )}
+
+            {/* Input bar */}
+            <InputBar
               value={inputText}
               onChangeText={setInputText}
-              placeholder="Message your AI concierge…"
-              placeholderTextColor={colors.textMuted}
-              multiline
-              maxLength={2000}
-              selectionColor={colors.primary}
-              onSubmitEditing={() => sendMessage(inputText)}
-              blurOnSubmit={false}
+              onSend={() => handleSend(inputText)}
+              disabled={isTyping || isStreaming}
             />
-          </View>
-          <Pressable
-            onPress={() => sendMessage(inputText)}
-            disabled={!inputText.trim() || isTyping}
-            style={({ pressed }) => [
-              styles.sendBtn,
-              (!inputText.trim() || isTyping) && styles.sendBtnDisabled,
-              pressed && styles.sendBtnPressed,
-            ]}>
-            <LinearGradient
-              colors={
-                !inputText.trim() || isTyping
-                  ? [colors.surfaceAlt, colors.surfaceAlt]
-                  : [colors.primary, colors.primaryDark]
-              }
-              style={styles.sendBtnGradient}>
-              <Text style={styles.sendBtnIcon}>↑</Text>
-            </LinearGradient>
-          </Pressable>
-        </View>
+          </>
+        )}
       </KeyboardAvoidingView>
     </SafeAreaView>
   );
 }
 
-// ─── Simulated AI response — replace with OpenAI / Anthropic API call ─────────
+// ─── Input bar sub-component ──────────────────────────────────────────────────
 
-async function simulateAIResponse(
-  userMessage: string,
-  mode: AIMode,
-  callback: (reply: string) => void,
-): Promise<void> {
-  await new Promise<void>(resolve => setTimeout(() => resolve(), 1500 + Math.random() * 1000));
+interface InputBarProps {
+  value: string;
+  onChangeText: (t: string) => void;
+  onSend: () => void;
+  disabled: boolean;
+}
 
-  const responses: Record<AIMode, string[]> = {
-    concierge: [
-      `Certainly. I have noted your request and will arrange that immediately. May I confirm the date and time preferences?`,
-      `Of course. I will coordinate with our partners to ensure everything is prepared to the highest standard. Shall I proceed?`,
-      `Understood. As an elite VANIR member, this will be handled with absolute priority. Any special requirements I should note?`,
-    ],
-    planner: [
-      `Excellent choice. Here is your personalized 7-day itinerary:\n\n**Day 1:** Private arrival transfer, check-in at the Nile Ritz-Carlton, sunset cruise on the Nile.\n\n**Day 2:** Exclusive private tour of the Pyramids of Giza with a certified Egyptologist.\n\n**Day 3:** Luxor by private jet — Valley of the Kings at dawn.\n\nShall I continue with the full itinerary?`,
-      `I've designed a bespoke journey based on your preferences. The key highlights include private access to exclusive sites, curated fine dining, and seamless VIP transfers throughout.`,
-    ],
-    vision: [
-      `I can see this is the Great Sphinx of Giza, one of the most iconic monuments in human history. Carved approximately in 2500 BCE during the reign of Pharaoh Khafre, it stands 20 meters tall and 73 meters long...`,
-      `Translation complete. This menu features traditional Egyptian cuisine. The highlighted dish is "Koshary" — a beloved street food layered with rice, lentils, pasta, and spiced tomato sauce.`,
-    ],
-  };
+function InputBar({ value, onChangeText, onSend, disabled }: InputBarProps) {
+  const canSend = value.trim().length > 0 && !disabled;
 
-  const pool = responses[mode];
-  callback(pool[Math.floor(Math.random() * pool.length)]);
+  return (
+    <View style={styles.inputBar}>
+      <View style={styles.inputWrapper}>
+        <TextInput
+          style={styles.input}
+          value={value}
+          onChangeText={onChangeText}
+          placeholder="Message your AI concierge…"
+          placeholderTextColor={colors.textMuted}
+          multiline
+          maxLength={2000}
+          selectionColor={colors.primary}
+          blurOnSubmit={false}
+        />
+      </View>
+
+      <Pressable
+        onPress={onSend}
+        disabled={!canSend}
+        style={({ pressed }) => [
+          styles.sendBtn,
+          !canSend && styles.sendBtnDisabled,
+          pressed && canSend && styles.sendBtnPressed,
+        ]}>
+        <LinearGradient
+          colors={canSend ? [colors.primary, colors.primaryDark] : [colors.surfaceAlt, colors.surfaceAlt]}
+          style={styles.sendBtnGradient}>
+          <Text style={styles.sendBtnIcon}>↑</Text>
+        </LinearGradient>
+      </Pressable>
+    </View>
+  );
 }
 
 // ─── Styles ───────────────────────────────────────────────────────────────────
@@ -265,6 +320,8 @@ async function simulateAIResponse(
 const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: colors.background },
   flex: { flex: 1 },
+
+  // Header
   header: {
     borderBottomWidth: 1,
     borderBottomColor: colors.border,
@@ -287,7 +344,12 @@ const styles = StyleSheet.create({
     letterSpacing: 3,
     fontFamily: 'Georgia',
   },
-  headerSubtitle: { fontSize: 10, color: colors.textMuted, letterSpacing: 1.5, marginTop: 1 },
+  headerSubtitle: {
+    fontSize: 10,
+    color: colors.textMuted,
+    letterSpacing: 1.5,
+    marginTop: 1,
+  },
   statusPill: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -301,6 +363,7 @@ const styles = StyleSheet.create({
   },
   statusDot: { width: 6, height: 6, borderRadius: 3, backgroundColor: colors.success },
   statusText: { fontSize: 11, color: colors.success, fontWeight: '600' },
+
   // Mode switcher
   modeSwitcher: {
     flexDirection: 'row',
@@ -325,8 +388,13 @@ const styles = StyleSheet.create({
   modeIconActive: { color: colors.primary },
   modeLabel: { fontSize: 10, color: colors.textMuted, fontWeight: '600', letterSpacing: 0.3 },
   modeLabelActive: { color: colors.primary },
+
   // Messages
   messageList: { paddingTop: spacing[4], paddingBottom: spacing[4] },
+
+  // Vision scroll
+  visionScroll: { paddingBottom: spacing[4] },
+
   // Quick prompts
   quickPromptsScroll: { maxHeight: 48 },
   quickPromptsRow: {
@@ -344,6 +412,7 @@ const styles = StyleSheet.create({
     paddingVertical: spacing[2],
   },
   quickPromptText: { fontSize: 12, color: colors.primary, fontWeight: '500' },
+
   // Input bar
   inputBar: {
     flexDirection: 'row',
@@ -366,13 +435,9 @@ const styles = StyleSheet.create({
     paddingVertical: Platform.OS === 'ios' ? spacing[3] : spacing[2],
     maxHeight: 120,
   },
-  input: {
-    color: colors.textPrimary,
-    fontSize: 15,
-    lineHeight: 22,
-  },
+  input: { color: colors.textPrimary, fontSize: 15, lineHeight: 22 },
   sendBtn: { width: 44, height: 44 },
-  sendBtnDisabled: { opacity: 0.4 },
+  sendBtnDisabled: { opacity: 0.35 },
   sendBtnPressed: { opacity: 0.85 },
   sendBtnGradient: {
     width: 44,
