@@ -156,6 +156,10 @@ jobs:
           command: chmod +x android/gradlew
 
       - run:
+          name: Install Ninja build system
+          command: sudo apt-get update -qq && sudo apt-get install -y ninja-build
+
+      - run:
           name: Build release APK
           working_directory: android
           # Pass release signing properties directly so they are never written
