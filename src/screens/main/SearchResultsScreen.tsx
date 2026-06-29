@@ -11,7 +11,6 @@ import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { FlightCard, FlightCardData } from '../../components/FlightCard';
 import { PropertyCard, PropertyCardData } from '../../components/PropertyCard';
-import { GoldButton } from '../../components/GoldButton';
 import { colors } from '../../theme/colors';
 import { borderRadius, spacing } from '../../theme/spacing';
 import type { RootStackParamList } from '../../navigation/types';
