@@ -18,15 +18,15 @@ executors:
       # cimg/android ships with Java 17, Android SDK (API 34), and Gradle.
       # Node.js is installed separately via the node orb.
       - image: cimg/android:2024.11.1
-    resource_class: large
+    resource_class: 2xlarge
     environment:
-      JVM_OPTS: -Xmx2g
+      JVM_OPTS: -Xmx4g
       GRADLE_OPTS: >-
         -Dorg.gradle.daemon=false
         -Dorg.gradle.workers.max=1
         -Dkotlin.incremental=false
-      # Limit Ninja/CMake parallel Clang jobs so they don't OOM alongside the JVM.
-      CMAKE_BUILD_PARALLEL_LEVEL: 1
+      # Allow 2 parallel Clang jobs; 32 GB gives enough headroom alongside the JVM.
+      CMAKE_BUILD_PARALLEL_LEVEL: 2
 
 # ---------------------------------------------------------------------------
 # Jobs
