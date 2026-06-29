@@ -20,7 +20,7 @@ executors:
       - image: cimg/android:2024.11.1
     resource_class: xlarge
     environment:
-      JVM_OPTS: -Xmx2g
+      JAVA_OPTS: -Xmx2g
       GRADLE_OPTS: >-
         -Dorg.gradle.daemon=false
         -Dorg.gradle.workers.max=1
