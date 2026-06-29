@@ -126,7 +126,7 @@ export function RecentBookings() {
             </tr>
           </thead>
           <tbody>
-            {MOCK_BOOKINGS.map((booking, idx) => (
+            {MOCK_BOOKINGS.map((booking) => (
               <tr
                 key={booking.id}
                 className="border-b border-white/[0.03] hover:bg-white/[0.02] transition-colors group">
