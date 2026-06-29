@@ -18,7 +18,7 @@ executors:
       # cimg/android ships with Java 17, Android SDK (API 34), and Gradle.
       # Node.js is installed separately via the node orb.
       - image: cimg/android:2024.11.1
-    resource_class: large
+    resource_class: xlarge
     environment:
       JVM_OPTS: -Xmx2g
       GRADLE_OPTS: >-
