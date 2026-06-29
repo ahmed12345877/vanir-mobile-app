@@ -159,9 +159,40 @@ jobs:
           name: Install Ninja build system
           command: sudo apt-get update -qq && sudo apt-get install -y ninja-build
 
+      # Pre-install the NDK and Build Tools versions required by the build so
+      # they are not downloaded during the Gradle configuration phase, saving
+      # several minutes of build time.
+      - restore_cache:
+          keys:
+            - android-sdk-tools-v1
+
+      - run:
+          name: Pre-install NDK and Build Tools
+          command: |
+            if [ ! -d "$ANDROID_HOME/ndk/27.0.12077973" ]; then
+              sdkmanager "ndk;27.0.12077973"
+            fi
+            if [ ! -d "$ANDROID_HOME/build-tools/35.0.0" ]; then
+              sdkmanager "build-tools;35.0.0"
+            fi
+
+      - save_cache:
+          key: android-sdk-tools-v1
+          paths:
+            - /home/circleci/android-sdk/ndk/27.0.12077973
+            - /home/circleci/android-sdk/build-tools/35.0.0
+
+      # Restore cached CMake build outputs so arm64 C++ compilation is skipped
+      # on repeat builds (the .cxx directory holds per-ABI Ninja build trees).
+      - restore_cache:
+          keys:
+            - cmake-arm64-v2-{{ checksum "android/app/build.gradle" }}
+            - cmake-arm64-v2-
+
       - run:
           name: Build release APK
           working_directory: android
+          no_output_timeout: 60m
           # Pass release signing properties directly so they are never written
           # to gradle.properties on disk and cannot be leaked in cache.
           command: |
@@ -178,6 +209,11 @@ jobs:
           paths:
             - ~/.gradle/caches
             - ~/.gradle/wrapper
+
+      - save_cache:
+          key: cmake-arm64-v2-{{ checksum "android/app/build.gradle" }}
+          paths:
+            - android/app/.cxx
 
       # Upload APK so it appears on the Artifacts tab and can be downloaded
       # without a local Android build environment.

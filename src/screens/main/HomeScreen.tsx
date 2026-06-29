@@ -140,11 +140,11 @@ export function HomeScreen() {
     [navigation],
   );
 
-  const handlePropertyPress = useCallback((id: string) => {
+  const handlePropertyPress = useCallback((_id: string) => {
     navigation.navigate('Booking');
   }, [navigation]);
 
-  const handleFlightPress = useCallback((id: string) => {
+  const handleFlightPress = useCallback((_id: string) => {
     navigation.navigate('Booking');
   }, [navigation]);
 

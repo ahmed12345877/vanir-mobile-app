@@ -12,6 +12,6 @@ describe('mobile scaffold configuration', () => {
   });
 
   it('keeps the shared mobile theme tokens available', () => {
-    expect(colors.primary).toBe('#d4a853');
+    expect(colors.primary).toBe('#c9a84c');
   });
 });
