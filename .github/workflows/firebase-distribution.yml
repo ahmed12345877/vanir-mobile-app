@@ -8,6 +8,9 @@ on:
         required: false
         default: 'Bug fixes and improvements'
 
+permissions:
+  contents: read
+
 jobs:
   build-and-distribute:
     runs-on: ubuntu-latest
